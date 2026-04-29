@@ -1,4 +1,4 @@
-import { head, escapeHtml, imgDims, SITE_URL } from "./_partials.js";
+import { head, header, escapeHtml, imgDims, SITE_URL } from "./_partials.js";
 
 export function renderPhoto({ photo, collection, prev, next }) {
   const exifRows = renderExifRows(photo);
@@ -19,7 +19,10 @@ export function renderPhoto({ photo, collection, prev, next }) {
     ? `<a href="/p/${next.id}/" rel="next">next →</a>`
     : `<span class="photo-nav__placeholder">next →</span>`;
 
-  const body = `<main
+  const body = `<div class="photo-shell">
+  ${header()}
+</div>
+<main
   class="photo-page"
   data-photo-page
   data-prev="${prev ? `/p/${prev.id}/` : ""}"

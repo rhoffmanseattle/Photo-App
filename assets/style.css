@@ -305,10 +305,21 @@ button {
 
 /* --- Photo detail page -------------------------------------- */
 
+.photo-shell {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2.5rem 2rem 1.5rem;
+}
+
+@media (max-width: 720px) {
+  .photo-shell {
+    padding: 1.25rem 1rem 0.75rem;
+  }
+}
+
 .photo-page {
   display: grid;
   grid-template-columns: 1fr var(--panel-w);
-  min-height: calc(100vh - 1px);
 }
 
 @media (max-width: 900px) {
@@ -321,22 +332,27 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2.5rem;
+  padding: 2rem 2.5rem;
   background: var(--bg);
-  min-height: 60vh;
 }
 
 @media (max-width: 720px) {
   .photo-stage {
-    padding: 1rem;
+    padding: 0.5rem 1rem 1rem;
   }
 }
 
 .photo-stage img {
-  max-height: calc(100vh - 5rem);
+  max-height: calc(100vh - 8rem);
   width: auto;
   max-width: 100%;
   box-shadow: var(--shadow);
+}
+
+@media (max-width: 720px) {
+  .photo-stage img {
+    max-height: 75vh;
+  }
 }
 
 .photo-meta {
