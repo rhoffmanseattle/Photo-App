@@ -17,7 +17,10 @@
     var east = Math.max.apply(null, lngs);
 
     var map = L.map(el, {
-      scrollWheelZoom: false, // require ctrl/cmd, avoids hijacking page scroll
+      // Enable wheel zoom: covers mouse wheel, trackpad two-finger
+      // scroll, and trackpad pinch (browsers deliver pinch as
+      // wheel + ctrlKey events which Leaflet handles natively).
+      scrollWheelZoom: true,
       worldCopyJump: true,
     });
 
