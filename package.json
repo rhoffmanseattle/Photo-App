@@ -1,0 +1,19 @@
+{
+  "name": "photo-longwalkhome-net",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Static photo portfolio for photo.longwalkhome.net, backed by Flickr.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "node build/fetch-flickr.js",
+    "dev": "npx --yes serve dist -l 3000",
+    "clean": "rm -rf dist data"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  },
+  "license": "GPL-3.0-only"
+}

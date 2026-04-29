@@ -1,0 +1,446 @@
+/* photo.longwalkhome.net
+   Editorial, light, generous. Photos lead, type recedes.
+   Cormorant Garamond for display, Inconsolata for metadata.
+   ----------------------------------------------------------- */
+
+/* --- Tokens ------------------------------------------------- */
+
+:root {
+  --bg: #fafaf7;
+  --bg-elev: #ffffff;
+  --ink: #1a1a1a;
+  --ink-soft: #555555;
+  --ink-faint: #8a8a8a;
+  --rule: #e6e4dd;
+  --accent: #1a1a1a;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.06);
+
+  --font-display: "Cormorant Garamond", "Cormorant", Georgia, "Times New Roman", serif;
+  --font-mono: "Inconsolata", ui-monospace, "SF Mono", Menlo, Monaco, monospace;
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+
+  --measure: 64ch;
+  --gap-grid: 1.5rem;
+  --gap-grid-tight: 0.75rem;
+
+  --panel-w: 380px;
+
+  --t-fast: 160ms;
+  --t-med: 280ms;
+  --ease: cubic-bezier(0.2, 0.6, 0.2, 1);
+}
+
+@media (max-width: 720px) {
+  :root {
+    --panel-w: 100vw;
+    --gap-grid: 0.75rem;
+    --gap-grid-tight: 0.5rem;
+  }
+}
+
+/* --- Reset / base ------------------------------------------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--t-fast) var(--ease);
+}
+
+a:hover {
+  border-bottom-color: var(--ink);
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+/* --- Layout primitives -------------------------------------- */
+
+.shell {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2.5rem 2rem 4rem;
+}
+
+@media (max-width: 720px) {
+  .shell {
+    padding: 1.25rem 1rem 3rem;
+  }
+}
+
+.site-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding-bottom: 1.5rem;
+  margin-bottom: 2.5rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.site-title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  letter-spacing: 0.005em;
+  margin: 0;
+}
+
+.site-title a {
+  border-bottom: 0;
+}
+
+.site-nav {
+  display: flex;
+  gap: 1.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  text-transform: lowercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+}
+
+.site-nav a:hover {
+  color: var(--ink);
+}
+
+.site-footer {
+  margin-top: 4rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--rule);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--ink-faint);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* --- Type styles -------------------------------------------- */
+
+.display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.15;
+  letter-spacing: -0.005em;
+  margin: 0 0 0.5rem;
+}
+
+.lede {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.25rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  max-width: var(--measure);
+  margin: 0 0 2.5rem;
+}
+
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--ink-faint);
+  margin: 0 0 1rem;
+}
+
+/* --- Photo grid (home, collection) -------------------------- */
+
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--gap-grid);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.photo-grid--dense {
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--gap-grid-tight);
+}
+
+.photo-tile {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-elev);
+  aspect-ratio: 4 / 3;
+}
+
+.photo-tile a {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.photo-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--t-med) var(--ease), opacity var(--t-med) var(--ease);
+}
+
+.photo-tile a:hover img {
+  transform: scale(1.02);
+}
+
+.photo-tile__caption {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 0.625rem 0.75rem;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.55), transparent);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  opacity: 0;
+  transition: opacity var(--t-med) var(--ease);
+}
+
+.photo-tile a:hover .photo-tile__caption {
+  opacity: 1;
+}
+
+/* --- Collections index -------------------------------------- */
+
+.collection-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 2rem 1.5rem;
+}
+
+.collection-card a {
+  display: block;
+  border: 0;
+}
+
+.collection-card__cover {
+  aspect-ratio: 3 / 2;
+  background: var(--bg-elev);
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+}
+
+.collection-card__cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--t-med) var(--ease);
+}
+
+.collection-card a:hover .collection-card__cover img {
+  transform: scale(1.02);
+}
+
+.collection-card__title {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 500;
+  margin: 0 0 0.125rem;
+  line-height: 1.2;
+}
+
+.collection-card__meta {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  color: var(--ink-faint);
+}
+
+.collection-card__desc {
+  margin: 0.375rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  max-width: 50ch;
+}
+
+/* --- Photo detail page -------------------------------------- */
+
+.photo-page {
+  display: grid;
+  grid-template-columns: 1fr var(--panel-w);
+  min-height: calc(100vh - 1px);
+}
+
+@media (max-width: 900px) {
+  .photo-page {
+    grid-template-columns: 1fr;
+  }
+}
+
+.photo-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem;
+  background: var(--bg);
+  min-height: 60vh;
+}
+
+@media (max-width: 720px) {
+  .photo-stage {
+    padding: 1rem;
+  }
+}
+
+.photo-stage img {
+  max-height: calc(100vh - 5rem);
+  width: auto;
+  max-width: 100%;
+  box-shadow: var(--shadow);
+}
+
+.photo-meta {
+  border-left: 1px solid var(--rule);
+  background: var(--bg-elev);
+  padding: 2.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  overflow-y: auto;
+}
+
+@media (max-width: 900px) {
+  .photo-meta {
+    border-left: 0;
+    border-top: 1px solid var(--rule);
+    padding: 2rem 1.25rem;
+  }
+}
+
+.photo-meta__title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.5rem;
+  line-height: 1.25;
+  margin: 0;
+}
+
+.photo-meta__caption {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  max-width: 38ch;
+}
+
+.exif {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.7;
+  color: var(--ink);
+  display: grid;
+  grid-template-columns: 7em 1fr;
+  gap: 0 1rem;
+}
+
+.exif dt {
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.6875rem;
+  align-self: center;
+}
+
+.exif dd {
+  margin: 0;
+  color: var(--ink);
+}
+
+.photo-nav {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-soft);
+  margin-top: auto;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--rule);
+}
+
+.photo-nav a:hover {
+  color: var(--ink);
+}
+
+.photo-nav__placeholder {
+  color: var(--ink-faint);
+  opacity: 0.4;
+}
+
+.photo-back {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-faint);
+  margin-bottom: 0.5rem;
+  display: inline-block;
+}
+
+.photo-back:hover {
+  color: var(--ink);
+}
+
+/* --- Prose (about page) ------------------------------------- */
+
+.prose {
+  max-width: var(--measure);
+  font-size: 1.0625rem;
+  line-height: 1.7;
+  color: var(--ink);
+}
+
+.prose p {
+  margin: 0 0 1.25em;
+}
+
+/* --- Empty state -------------------------------------------- */
+
+.empty {
+  font-family: var(--font-display);
+  font-style: italic;
+  color: var(--ink-faint);
+  padding: 4rem 0;
+  text-align: center;
+}
