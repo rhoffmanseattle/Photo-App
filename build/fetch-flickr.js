@@ -19,6 +19,7 @@ import { renderPhoto } from "./templates/photo.js";
 import { renderAbout } from "./templates/about.js";
 import { renderCamerasIndex } from "./templates/cameras-index.js";
 import { renderCamera } from "./templates/camera.js";
+import { renderMap } from "./templates/map.js";
 import { displayCamera, isCameraHidden } from "./camera-aliases.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -538,6 +539,15 @@ async function renderSite({ photoIndex, allPhotos, collections, cameras, stats }
       renderCamera({ camera: cam, photos: photoIndex, buildTime }),
     );
   }
+
+  // Map page (geotagged photos plotted on a Leaflet map)
+  const geotagged = allPhotos.filter((p) => p.geo && (p.geo.lat !== 0 || p.geo.lng !== 0));
+  await ensureDir(path.join(DIST, "map"));
+  await writeFile(
+    path.join(DIST, "map", "index.html"),
+    renderMap({ geotaggedPhotos: geotagged, totalPhotos: allPhotos.length, buildTime }),
+  );
+  console.log(`[render] /map/ (${geotagged.length} pins)`);
 
   await ensureDir(path.join(DIST, "about"));
   await writeFile(path.join(DIST, "about", "index.html"), renderAbout({ buildTime, stats }));

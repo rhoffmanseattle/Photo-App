@@ -42,6 +42,7 @@ export function header() {
     <a href="/">recent</a>
     <a href="/c/">collections</a>
     <a href="/g/">cameras</a>
+    <a href="/map/">map</a>
     <a href="/about/">about</a>
   </nav>
 </header>`;
