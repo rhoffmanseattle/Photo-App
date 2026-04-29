@@ -11,7 +11,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { slugify } from "./templates/_partials.js";
+import { slugify, formatBytes } from "./templates/_partials.js";
 import { renderHome } from "./templates/home.js";
 import { renderCollectionsIndex } from "./templates/collections-index.js";
 import { renderCollection } from "./templates/collection.js";
@@ -31,6 +31,7 @@ const API_KEY = process.env.FLICKR_API_KEY;
 const USER_ID = process.env.FLICKR_USER_ID;
 const HOME_RECENT_LIMIT = 60;
 const EXIF_CONCURRENCY = 5;
+const SIZE_CONCURRENCY = 10;
 
 if (!API_KEY || !USER_ID) {
   console.error("Missing FLICKR_API_KEY or FLICKR_USER_ID. Set them in .env locally or in Netlify env vars.");
@@ -125,7 +126,21 @@ async function main() {
     }
   }
 
-  // 6. Compute camera groups from EXIF
+  // 6. HEAD each photo's largest variant to measure file sizes
+  console.log(`[fetch] sizes for ${allPhotos.length} photos (concurrency ${SIZE_CONCURRENCY})`);
+  await runWithConcurrency(allPhotos, SIZE_CONCURRENCY, async (p) => {
+    const url = p.urls.original || p.urls.large || p.urls.medium || p.urls.small;
+    if (!url) return;
+    try {
+      const res = await fetch(url, { method: "HEAD" });
+      const len = res.headers.get("content-length");
+      if (len) p.bytes = parseInt(len, 10);
+    } catch (err) {
+      // Network hiccup, skip silently
+    }
+  });
+
+  // 7. Compute camera groups from EXIF
   const cameras = computeCameraGroups(allPhotos);
   console.log(`[group] ${cameras.length} cameras (${allPhotos.filter(p => p.exif && p.exif.camera).length} of ${allPhotos.length} photos have camera EXIF)`);
 
@@ -135,15 +150,46 @@ async function main() {
   await fs.writeFile(path.join(DATA, "cameras.json"), JSON.stringify(cameras, null, 2));
   console.log(`[write] data/photos.json (${allPhotos.length}), data/collections.json (${collections.length}), data/cameras.json (${cameras.length})`);
 
-  // 8. Render pages
-  await renderSite({ photoIndex, allPhotos, collections, cameras });
+  // 8. Compute stats for the about page
+  const stats = computeStats({ allPhotos, cameras });
+  console.log(`[stats] ${stats.totalPhotos} photos, ${formatBytes(stats.totalBytes)}, ${stats.cameraCounts.length} cameras`);
 
-  // 9. Copy assets
+  // 9. Render pages
+  await renderSite({ photoIndex, allPhotos, collections, cameras, stats });
+
+  // 10. Copy assets
   await copyDir(ASSETS_SRC, path.join(DIST, "assets"));
   console.log(`[copy]  assets/ -> dist/assets/`);
 
   console.log(`[done]  built ${allPhotos.length} photos / ${collections.length} collections / ${cameras.length} cameras`);
 }
+
+// --- Stats --------------------------------------------------------
+
+function computeStats({ allPhotos, cameras }) {
+  const totalPhotos = allPhotos.length;
+  const totalBytes = allPhotos.reduce((sum, p) => sum + (p.bytes || 0), 0);
+  const sizedPhotos = allPhotos.filter((p) => (p.bytes || 0) > 0).length;
+
+  const cameraCounts = cameras.map((c) => ({
+    title: c.title,
+    slug: c.slug,
+    count: c.photoIds.length,
+  }));
+
+  const photosWithoutExif = allPhotos.filter(
+    (p) => !p.exif || !p.exif.camera,
+  ).length;
+
+  return {
+    totalPhotos,
+    totalBytes,
+    sizedPhotos,
+    cameraCounts,
+    photosWithoutExif,
+  };
+}
+
 
 // --- Camera grouping ----------------------------------------------
 
@@ -275,6 +321,7 @@ function normalizePhoto(p, album) {
     exif: {},
     location: "",
     collectionTitle: "",
+    bytes: 0,
   };
 }
 
@@ -319,7 +366,7 @@ function extractExif(exifResp) {
 
 // --- Renderer ------------------------------------------------------
 
-async function renderSite({ photoIndex, allPhotos, collections, cameras }) {
+async function renderSite({ photoIndex, allPhotos, collections, cameras, stats }) {
   // Sort photos by dateTaken desc for the homepage
   const sortedRecent = [...allPhotos]
     .filter((p) => p.urls.medium || p.urls.small)
@@ -397,7 +444,7 @@ async function renderSite({ photoIndex, allPhotos, collections, cameras }) {
   }
 
   await ensureDir(path.join(DIST, "about"));
-  await writeFile(path.join(DIST, "about", "index.html"), renderAbout({ buildTime }));
+  await writeFile(path.join(DIST, "about", "index.html"), renderAbout({ buildTime, stats }));
   console.log(`[render] /about/`);
 }
 

@@ -69,6 +69,20 @@ export function escapeAttr(s) {
   return escapeHtml(s);
 }
 
+// Format a byte count as a human-readable string. 1.23 GB style.
+export function formatBytes(n) {
+  if (!n) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let i = 0;
+  let v = n;
+  while (v >= 1024 && i < units.length - 1) {
+    v /= 1024;
+    i++;
+  }
+  const rounded = v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.toFixed(2);
+  return `${rounded} ${units[i]}`;
+}
+
 // Slugify album titles into URL-safe collection slugs.
 export function slugify(s) {
   return String(s || "")

@@ -1,6 +1,6 @@
-import { head, header, footer, SITE_URL } from "./_partials.js";
+import { head, header, footer, escapeHtml, formatBytes, SITE_URL } from "./_partials.js";
 
-export function renderAbout({ buildTime } = {}) {
+export function renderAbout({ buildTime, stats } = {}) {
   const body = `<div class="shell">
   ${header()}
   <article class="prose">
@@ -9,6 +9,7 @@ export function renderAbout({ buildTime } = {}) {
     <p>Built with vanilla HTML, CSS, and a little Node. Updates roll through automatically a few times a day. If something is missing, it likely just hasn't rebuilt yet.</p>
     <p>Find the full library at <a href="https://www.flickr.com/photos/76894493@N00/">flickr.com/photos/76894493@N00</a>.</p>
   </article>
+  ${stats ? renderStats(stats) : ""}
   ${footer({ buildTime })}
 </div>`;
 
@@ -21,4 +22,33 @@ export function renderAbout({ buildTime } = {}) {
 ${body}
 </body>
 </html>`;
+}
+
+function renderStats(stats) {
+  const totalBytesHuman = formatBytes(stats.totalBytes);
+  const cameraRows = stats.cameraCounts
+    .slice()
+    .sort((a, b) => b.count - a.count)
+    .map(
+      (c) =>
+        `      <dt><a href="/g/${c.slug}/">${escapeHtml(c.title)}</a></dt><dd>${c.count}</dd>`,
+    )
+    .join("\n");
+
+  const noExifRow = stats.photosWithoutExif
+    ? `      <dt class="stats-faint">no camera EXIF</dt><dd class="stats-faint">${stats.photosWithoutExif}</dd>`
+    : "";
+
+  return `  <section class="stats">
+    <h3 class="section-label">archive stats</h3>
+    <dl class="stats-summary">
+      <dt>total photos</dt><dd>${stats.totalPhotos}</dd>
+      <dt>total size</dt><dd>${escapeHtml(totalBytesHuman)}</dd>
+    </dl>
+    <h4 class="section-label section-label--sub">photos per camera</h4>
+    <dl class="stats-cameras">
+${cameraRows}
+${noExifRow}
+    </dl>
+  </section>`;
 }
