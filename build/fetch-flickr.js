@@ -126,6 +126,21 @@ async function main() {
     }
   }
 
+  // 5b. For geotagged photos, fetch the place hierarchy and format a clean
+  //     LOCATION string ("Seattle, Washington, United States" / "Bagan,
+  //     Mandalay, Myanmar"). Skip silently for photos without geo.
+  const geotagged = allPhotos.filter((p) => p.geo.lat !== 0 || p.geo.lng !== 0);
+  console.log(`[fetch] geo.getLocation for ${geotagged.length} geotagged photos`);
+  await runWithConcurrency(geotagged, EXIF_CONCURRENCY, async (p) => {
+    try {
+      const r = await flickr("flickr.photos.geo.getLocation", { photo_id: p.id });
+      const formatted = formatPlace(r.photo && r.photo.location);
+      if (formatted) p.location = formatted;
+    } catch (err) {
+      // Photo not geotagged on Flickr's side, or other API issue. Skip.
+    }
+  });
+
   // 6. Measure file sizes by HEAD'ing the largest available variant per photo,
   //    streaming if HEAD does not return Content-Length (Flickr's CDN often
   //    omits it for the on-demand-generated larger sizes).
@@ -158,6 +173,25 @@ async function main() {
   console.log(`[copy]  assets/ -> dist/assets/`);
 
   console.log(`[done]  built ${allPhotos.length} photos / ${collections.length} collections / ${cameras.length} cameras`);
+}
+
+// --- Place formatting ---------------------------------------------
+
+// Turn Flickr's geo.getLocation response into a clean display string.
+// Format: "Locality, Region, Country", trimming empties and dedup'd
+// when locality and region match (e.g. for city-states).
+function formatPlace(loc) {
+  if (!loc) return "";
+  const get = (k) => (loc[k] && loc[k]._content) || "";
+  const locality = get("locality");
+  const region = get("region");
+  const country = get("country");
+
+  const parts = [];
+  if (locality) parts.push(locality);
+  if (region && region !== locality) parts.push(region);
+  if (country) parts.push(country);
+  return parts.join(", ");
 }
 
 // --- Size measurement --------------------------------------------
@@ -374,6 +408,11 @@ function normalizePhoto(p, album) {
     location: "",
     collectionTitle: "",
     bytes: 0,
+    geo: {
+      lat: parseFloat(p.latitude) || 0,
+      lng: parseFloat(p.longitude) || 0,
+      accuracy: parseInt(p.accuracy, 10) || 0,
+    },
   };
 }
 
