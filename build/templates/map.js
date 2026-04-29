@@ -22,7 +22,7 @@ export function renderMap({ geotaggedPhotos, totalPhotos, buildTime }) {
   ${header()}
   <p class="section-label">map</p>
   <h2 class="display">Where the work was made.</h2>
-  <p class="lede">${points.length} of ${totalPhotos} photo${totalPhotos === 1 ? "" : "s"} are geotagged. The rest aren't on the map yet — geotagging happens automatically for new phone shots, or by hand on Flickr.</p>
+  <p class="lede">${points.length} of ${totalPhotos} photo${totalPhotos === 1 ? "" : "s"} are geotagged. The rest aren't on the map yet.</p>
 </div>
 ${empty ? renderEmptyState() : `<div id="photo-map" class="photo-map" aria-label="Map of photo locations"></div>`}
 <div class="shell">
