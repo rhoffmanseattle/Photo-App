@@ -1,0 +1,33 @@
+# --- Internal / non-app docs ---
+# Planning notes, todos, drafts, and anything that shouldn't ship in the public repo.
+docs/internal/
+
+# --- Build artifacts ---
+# Output of the Flickr fetch + static page generator. Regenerated on every Netlify build.
+dist/
+data/photos.json
+data/collections.json
+
+# --- Node ---
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# --- Environment / secrets ---
+# Flickr API key lives in Netlify env vars. Never commit a local .env.
+.env
+.env.local
+.env.*.local
+
+# --- Netlify ---
+.netlify/
+
+# --- OS / editor noise ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo

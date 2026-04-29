@@ -1,0 +1,27 @@
+# Netlify build config for photo.longwalkhome.net
+#
+# NOTE: build/fetch-flickr.js does not exist yet. The first deploy will fail
+# until that script and the static/ source folder are added in the next
+# build session. Until then, you can connect the GitHub repo to Netlify and
+# it will pick up this config automatically once the build script lands.
+
+[build]
+  command = "node build/fetch-flickr.js && cp -r static/* dist/"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+  # FLICKR_API_KEY and FLICKR_USER_ID are set in the Netlify UI as env vars.
+  # Do not put real values in this file — it is committed to GitHub.
+
+# Clean URL for photo permalinks: /p/{id} resolves to /p/{id}/index.html.
+[[redirects]]
+  from = "/p/:id"
+  to = "/p/:id/index.html"
+  status = 200
+
+# Same pattern for collection pages.
+[[redirects]]
+  from = "/c/:slug"
+  to = "/c/:slug/index.html"
+  status = 200
