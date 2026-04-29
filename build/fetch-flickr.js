@@ -126,18 +126,14 @@ async function main() {
     }
   }
 
-  // 6. HEAD each photo's largest variant to measure file sizes
+  // 6. Measure file sizes by HEAD'ing the largest available variant per photo,
+  //    streaming if HEAD does not return Content-Length (Flickr's CDN often
+  //    omits it for the on-demand-generated larger sizes).
   console.log(`[fetch] sizes for ${allPhotos.length} photos (concurrency ${SIZE_CONCURRENCY})`);
   await runWithConcurrency(allPhotos, SIZE_CONCURRENCY, async (p) => {
-    const url = p.urls.original || p.urls.large || p.urls.medium || p.urls.small;
+    const url = pickLargestUrl(p.urls);
     if (!url) return;
-    try {
-      const res = await fetch(url, { method: "HEAD" });
-      const len = res.headers.get("content-length");
-      if (len) p.bytes = parseInt(len, 10);
-    } catch (err) {
-      // Network hiccup, skip silently
-    }
+    p.bytes = await measureUrlBytes(url);
   });
 
   // 7. Compute camera groups from EXIF
@@ -162,6 +158,56 @@ async function main() {
   console.log(`[copy]  assets/ -> dist/assets/`);
 
   console.log(`[done]  built ${allPhotos.length} photos / ${collections.length} collections / ${cameras.length} cameras`);
+}
+
+// --- Size measurement --------------------------------------------
+
+// Pick the URL of the largest publicly-served variant.
+// Falls back through k tiers down to medium / small if larger ones aren't
+// available (which depends on the original upload size).
+function pickLargestUrl(urls) {
+  return (
+    urls.original ||
+    urls["6k"] ||
+    urls["5k"] ||
+    urls["4k"] ||
+    urls["3k"] ||
+    urls.k ||
+    urls.h ||
+    urls.large ||
+    urls.medium ||
+    urls.small ||
+    ""
+  );
+}
+
+// Get the byte size of a URL. Tries HEAD first (cheap, one round trip),
+// falls back to a streaming GET that counts bytes on the fly when the
+// CDN does not return Content-Length (which Flickr does for the on-demand
+// larger variants like _4k.jpg, _6k.jpg).
+async function measureUrlBytes(url) {
+  try {
+    const head = await fetch(url, { method: "HEAD" });
+    const len = head.headers.get("content-length");
+    if (len && parseInt(len, 10) > 0) return parseInt(len, 10);
+  } catch (err) {
+    // fall through to streaming
+  }
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok || !res.body) return 0;
+    const reader = res.body.getReader();
+    let total = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.length;
+    }
+    return total;
+  } catch (err) {
+    return 0;
+  }
 }
 
 // --- Stats --------------------------------------------------------
@@ -274,7 +320,7 @@ async function fetchAllAlbumPhotos(photosetId) {
       privacy_filter: 1, // public only
       extras:
         "description,date_taken,date_upload,owner_name,tags,geo,o_dims," +
-        "url_t,url_s,url_m,url_l,url_o",
+        "url_t,url_s,url_m,url_l,url_h,url_k,url_3k,url_4k,url_5k,url_6k,url_o",
     });
     const photoset = r.photoset || {};
     const photos = photoset.photo || [];
@@ -309,6 +355,12 @@ function normalizePhoto(p, album) {
       small: p.url_s || "",
       medium: p.url_m || "",
       large: p.url_l || "",
+      h: p.url_h || "",
+      k: p.url_k || "",
+      "3k": p.url_3k || "",
+      "4k": p.url_4k || "",
+      "5k": p.url_5k || "",
+      "6k": p.url_6k || "",
       original: p.url_o || "",
     },
     dims: {
