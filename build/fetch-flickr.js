@@ -419,13 +419,18 @@ function extractExif(exifResp) {
 // --- Renderer ------------------------------------------------------
 
 async function renderSite({ photoIndex, allPhotos, collections, cameras, stats }) {
-  // Sort photos by dateTaken desc for the homepage
+  // Sort photos by Flickr upload timestamp (newest first) for the homepage.
+  // This is what readers experience as "recent" — when something appeared on
+  // the site — not when the shutter clicked. Archive uploads (a 2018 photo
+  // posted today) correctly surface on top.
   const sortedRecent = [...allPhotos]
     .filter((p) => p.urls.medium || p.urls.small)
     .sort((a, b) => {
-      const da = a.dateTaken || a.dateUpload || "";
-      const db = b.dateTaken || b.dateUpload || "";
-      return db.localeCompare(da);
+      const da = parseInt(a.dateUpload || "0", 10);
+      const db = parseInt(b.dateUpload || "0", 10);
+      if (db !== da) return db - da;
+      // Fall back to dateTaken if upload timestamps tie (very unlikely)
+      return (b.dateTaken || "").localeCompare(a.dateTaken || "");
     })
     .slice(0, HOME_RECENT_LIMIT);
 
