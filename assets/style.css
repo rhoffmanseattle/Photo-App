@@ -329,11 +329,9 @@ button {
 }
 
 .photo-stage {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   padding: 2rem 2.5rem;
   background: var(--bg);
+  text-align: center;
 }
 
 @media (max-width: 720px) {
@@ -342,10 +340,17 @@ button {
   }
 }
 
+/* Block + margin auto + explicit width/height auto with both max
+   constraints. Avoids iOS Safari's known issue with auto-sized
+   <img> in flex containers (which can distort aspect ratio when
+   max-height kicks in). */
 .photo-stage img {
-  max-height: calc(100vh - 8rem);
+  display: block;
+  margin: 0 auto;
   width: auto;
+  height: auto;
   max-width: 100%;
+  max-height: calc(100vh - 8rem);
   box-shadow: var(--shadow);
 }
 

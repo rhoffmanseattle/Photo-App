@@ -1,4 +1,4 @@
-import { head, header, escapeHtml, imgDims, SITE_URL } from "./_partials.js";
+import { head, header, escapeHtml, SITE_URL } from "./_partials.js";
 
 export function renderPhoto({ photo, collection, prev, next }) {
   const exifRows = renderExifRows(photo);
@@ -34,7 +34,6 @@ export function renderPhoto({ photo, collection, prev, next }) {
       src="${heroSrc}"
       ${heroSrcset ? `srcset="${heroSrcset}"` : ""}
       sizes="(max-width: 900px) 100vw, calc(100vw - 380px)"
-      ${imgDims(photo)}
       alt="${escapeHtml(photo.title || "Photograph")}"
       decoding="async"
       fetchpriority="high"
