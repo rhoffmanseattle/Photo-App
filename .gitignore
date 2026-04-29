@@ -5,8 +5,7 @@ docs/internal/
 # --- Build artifacts ---
 # Output of the Flickr fetch + static page generator. Regenerated on every Netlify build.
 dist/
-data/photos.json
-data/collections.json
+data/
 
 # --- Node ---
 node_modules/

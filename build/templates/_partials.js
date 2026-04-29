@@ -39,6 +39,7 @@ export function header() {
   <nav class="site-nav">
     <a href="/">recent</a>
     <a href="/c/">collections</a>
+    <a href="/g/">cameras</a>
     <a href="/about/">about</a>
   </nav>
 </header>`;

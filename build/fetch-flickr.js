@@ -17,6 +17,9 @@ import { renderCollectionsIndex } from "./templates/collections-index.js";
 import { renderCollection } from "./templates/collection.js";
 import { renderPhoto } from "./templates/photo.js";
 import { renderAbout } from "./templates/about.js";
+import { renderCamerasIndex } from "./templates/cameras-index.js";
+import { renderCamera } from "./templates/camera.js";
+import { displayCamera, isCameraHidden } from "./camera-aliases.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -122,19 +125,71 @@ async function main() {
     }
   }
 
-  // 6. Write JSON artifacts (handy for debugging / future tooling)
+  // 6. Compute camera groups from EXIF
+  const cameras = computeCameraGroups(allPhotos);
+  console.log(`[group] ${cameras.length} cameras (${allPhotos.filter(p => p.exif && p.exif.camera).length} of ${allPhotos.length} photos have camera EXIF)`);
+
+  // 7. Write JSON artifacts (handy for debugging / future tooling)
   await fs.writeFile(path.join(DATA, "photos.json"), JSON.stringify(photoIndex, null, 2));
   await fs.writeFile(path.join(DATA, "collections.json"), JSON.stringify(collections, null, 2));
-  console.log(`[write] data/photos.json (${allPhotos.length}), data/collections.json (${collections.length})`);
+  await fs.writeFile(path.join(DATA, "cameras.json"), JSON.stringify(cameras, null, 2));
+  console.log(`[write] data/photos.json (${allPhotos.length}), data/collections.json (${collections.length}), data/cameras.json (${cameras.length})`);
 
-  // 7. Render pages
-  await renderSite({ photoIndex, allPhotos, collections });
+  // 8. Render pages
+  await renderSite({ photoIndex, allPhotos, collections, cameras });
 
-  // 8. Copy assets
+  // 9. Copy assets
   await copyDir(ASSETS_SRC, path.join(DIST, "assets"));
   console.log(`[copy]  assets/ -> dist/assets/`);
 
-  console.log(`[done]  built ${allPhotos.length} photos across ${collections.length} collections`);
+  console.log(`[done]  built ${allPhotos.length} photos / ${collections.length} collections / ${cameras.length} cameras`);
+}
+
+// --- Camera grouping ----------------------------------------------
+
+function computeCameraGroups(allPhotos) {
+  const groups = new Map(); // displayName -> { title, photoIds, dateTaken[] }
+
+  for (const p of allPhotos) {
+    const cameraDisplay = p.exif && p.exif.camera;
+    const cameraRaw = (p.exif && p.exif.cameraRaw) || cameraDisplay;
+    if (!cameraDisplay) continue; // skip photos with no EXIF
+    if (cameraRaw && isCameraHidden(cameraRaw)) continue;
+
+    if (!groups.has(cameraDisplay)) {
+      groups.set(cameraDisplay, {
+        title: cameraDisplay,
+        slug: slugify(cameraDisplay),
+        photoIds: [],
+        latestDate: "",
+      });
+    }
+    const g = groups.get(cameraDisplay);
+    g.photoIds.push(p.id);
+    const d = p.dateTaken || p.dateUpload || "";
+    if (d > g.latestDate) g.latestDate = d;
+  }
+
+  // Sort photos within each group by date desc
+  for (const g of groups.values()) {
+    g.photoIds.sort((a, b) => {
+      const pa = allPhotos.find((p) => p.id === a);
+      const pb = allPhotos.find((p) => p.id === b);
+      const da = (pa && (pa.dateTaken || pa.dateUpload)) || "";
+      const db = (pb && (pb.dateTaken || pb.dateUpload)) || "";
+      return db.localeCompare(da);
+    });
+  }
+
+  // Sort groups by latest activity, newest first
+  const list = Array.from(groups.values()).sort((a, b) =>
+    b.latestDate.localeCompare(a.latestDate),
+  );
+
+  // Disambiguate slug collisions
+  dedupeSlugs(list);
+
+  return list;
 }
 
 // --- Flickr API ----------------------------------------------------
@@ -230,9 +285,18 @@ function extractExif(exifResp) {
     byTag[e.tag] = e.raw && e.raw._content;
   }
 
-  const make = byTag.Make || "";
-  const model = byTag.Model || "";
-  const camera = [make, model].filter(Boolean).join(" ").trim() || "";
+  const make = (byTag.Make || "").trim();
+  const model = (byTag.Model || "").trim();
+  // Some manufacturers (notably Canon) repeat the make in the model field.
+  // Collapse "Canon Canon EOS Rebel XTi" -> "Canon EOS Rebel XTi".
+  let cameraRaw;
+  if (model && make && model.toLowerCase().startsWith(make.toLowerCase())) {
+    cameraRaw = model;
+  } else {
+    cameraRaw = [make, model].filter(Boolean).join(" ").trim();
+  }
+  // Apply alias map for display.
+  const camera = displayCamera(cameraRaw);
 
   const lens = byTag.LensModel || byTag.Lens || "";
 
@@ -250,12 +314,12 @@ function extractExif(exifResp) {
   if (byTag.ISO) exposureBits.push(`ISO ${byTag.ISO}`);
   const exposure = exposureBits.join(" · ");
 
-  return { camera, lens, focal, exposure, raw: byTag };
+  return { camera, cameraRaw, lens, focal, exposure, raw: byTag };
 }
 
 // --- Renderer ------------------------------------------------------
 
-async function renderSite({ photoIndex, allPhotos, collections }) {
+async function renderSite({ photoIndex, allPhotos, collections, cameras }) {
   // Sort photos by dateTaken desc for the homepage
   const sortedRecent = [...allPhotos]
     .filter((p) => p.urls.medium || p.urls.small)
@@ -314,6 +378,23 @@ async function renderSite({ photoIndex, allPhotos, collections }) {
     }
   }
   console.log(`[render] /p/{id}/ (${photoCount} pages)`);
+
+  // Camera group pages
+  await ensureDir(path.join(DIST, "g"));
+  await writeFile(
+    path.join(DIST, "g", "index.html"),
+    renderCamerasIndex({ cameras, photos: photoIndex, buildTime }),
+  );
+  console.log(`[render] /g/ (${cameras.length} cameras)`);
+
+  for (const cam of cameras) {
+    const dir = path.join(DIST, "g", cam.slug);
+    await ensureDir(dir);
+    await writeFile(
+      path.join(dir, "index.html"),
+      renderCamera({ camera: cam, photos: photoIndex, buildTime }),
+    );
+  }
 
   await ensureDir(path.join(DIST, "about"));
   await writeFile(path.join(DIST, "about", "index.html"), renderAbout({ buildTime }));

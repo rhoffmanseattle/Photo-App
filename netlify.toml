@@ -20,3 +20,9 @@
   from = "/c/:slug"
   to = "/c/:slug/index.html"
   status = 200
+
+# Same pattern for camera group pages (auto-generated from EXIF).
+[[redirects]]
+  from = "/g/:slug"
+  to = "/g/:slug/index.html"
+  status = 200
