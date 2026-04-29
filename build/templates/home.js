@@ -37,7 +37,7 @@ function renderTile(p) {
         <img
           src="${src}"
           ${srcset ? `srcset="${srcset}"` : ""}
-          sizes="(max-width: 720px) 50vw, (max-width: 1200px) 33vw, 280px"
+          sizes="(max-width: 500px) 100vw, (max-width: 1024px) 50vw, 240px"
           ${imgDims(p)}
           alt="${escapeHtml(alt)}"
           loading="lazy"
