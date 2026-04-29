@@ -21,6 +21,8 @@ export function head({ title, description, ogImage, ogUrl, extra = "" }) {
   <meta name="description" content="${escapeAttr(desc)}" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://live.staticflickr.com" crossorigin />
+  <link rel="dns-prefetch" href="https://live.staticflickr.com" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Inconsolata:wght@400;500&family=Inter:wght@400;500&display=swap" />
   <link rel="stylesheet" href="/assets/style.css" />
   <meta property="og:type" content="${image ? "article" : "website"}" />
@@ -81,6 +83,20 @@ export function formatBytes(n) {
   }
   const rounded = v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.toFixed(2);
   return `${rounded} ${units[i]}`;
+}
+
+// Return width/height attributes for an img tag based on a photo's
+// known dimensions, so the browser reserves space and avoids layout
+// shift before the image loads. Returns "" if no dims are known.
+// The actual rendered size is governed by CSS; these values just lock
+// the aspect ratio.
+export function imgDims(photo) {
+  const d =
+    (photo && photo.dims && photo.dims.original) ||
+    (photo && photo.dims && photo.dims.large) ||
+    (photo && photo.dims && photo.dims.medium);
+  if (!d || !d.w || !d.h) return "";
+  return `width="${d.w}" height="${d.h}"`;
 }
 
 // Slugify album titles into URL-safe collection slugs.

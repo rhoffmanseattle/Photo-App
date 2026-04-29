@@ -1,4 +1,4 @@
-import { head, header, footer, escapeHtml, SITE_URL } from "./_partials.js";
+import { head, header, footer, escapeHtml, imgDims, SITE_URL } from "./_partials.js";
 
 // Recent grid: most recent N photos across all collections.
 export function renderHome({ photos, buildTime }) {
@@ -38,6 +38,7 @@ function renderTile(p) {
           src="${src}"
           ${srcset ? `srcset="${srcset}"` : ""}
           sizes="(max-width: 720px) 50vw, (max-width: 1200px) 33vw, 280px"
+          ${imgDims(p)}
           alt="${escapeHtml(alt)}"
           loading="lazy"
           decoding="async"

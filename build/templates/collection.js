@@ -1,4 +1,4 @@
-import { head, header, footer, escapeHtml, SITE_URL } from "./_partials.js";
+import { head, header, footer, escapeHtml, imgDims, SITE_URL } from "./_partials.js";
 
 export function renderCollection({ collection, photos, buildTime }) {
   const tiles = collection.photoIds.length
@@ -49,6 +49,7 @@ function renderTile(p) {
           src="${src}"
           ${srcset ? `srcset="${srcset}"` : ""}
           sizes="(max-width: 720px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          ${imgDims(p)}
           alt="${escapeHtml(alt)}"
           loading="lazy"
           decoding="async"

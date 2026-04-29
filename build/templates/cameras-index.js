@@ -1,4 +1,4 @@
-import { head, header, footer, escapeHtml, SITE_URL } from "./_partials.js";
+import { head, header, footer, escapeHtml, imgDims, SITE_URL } from "./_partials.js";
 
 export function renderCamerasIndex({ cameras, photos, buildTime }) {
   const cards = cameras.length
@@ -37,7 +37,7 @@ function renderCard(c, allPhotos) {
   return `    <li class="collection-card">
       <a href="/g/${c.slug}/">
         <div class="collection-card__cover">
-          ${coverUrl ? `<img src="${coverUrl}" alt="" loading="lazy" decoding="async" />` : ""}
+          ${coverUrl ? `<img src="${coverUrl}" ${imgDims(cover)} alt="" loading="lazy" decoding="async" />` : ""}
         </div>
         <h3 class="collection-card__title">${escapeHtml(c.title)}</h3>
         <p class="collection-card__meta">${count} photo${count === 1 ? "" : "s"}</p>
