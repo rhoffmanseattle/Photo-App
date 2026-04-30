@@ -1,4 +1,4 @@
-import { head, header, escapeHtml, lightboxAssets, lightboxSource, SITE_URL } from "./_partials.js";
+import { head, header, escapeHtml, lightboxAssets, lightboxItem, lightboxSource, SITE_URL } from "./_partials.js";
 
 export function renderPhoto({ photo, collection, prev, next, albumPhotos }) {
   const exifRows = renderExifRows(photo);
@@ -9,18 +9,11 @@ export function renderPhoto({ photo, collection, prev, next, albumPhotos }) {
   const collectionTitle = collection ? collection.title : "All photos";
 
   // Album sequence for the lightbox: every photo in this collection,
-  // in order, with the lightbox source URL and natural dims.
-  const galleryItems = (albumPhotos || [photo]).map((p) => {
-    const ls = lightboxSource(p);
-    return {
-      id: p.id,
-      src: ls.src,
-      width: ls.width,
-      height: ls.height,
-      msrc: p.urls.medium || p.urls.small || "",
-      alt: p.title || "",
-    };
-  });
+  // in order, with the lightbox source URL, natural dims, and full
+  // metadata for the in-viewer caption panel.
+  const galleryItems = (albumPhotos || [photo]).map((p) =>
+    lightboxItem(p, { albumTitle: collection ? collection.title : "" }),
+  );
 
   const heroLs = lightboxSource(photo);
 
@@ -75,7 +68,7 @@ export function renderPhoto({ photo, collection, prev, next, albumPhotos }) {
   </aside>
 </main>
 <script>window.PHOTO_PAGE_ID = ${JSON.stringify(photo.id)};</script>
-<script id="photo-page-gallery" type="application/json">${JSON.stringify(galleryItems)}</script>
+<script id="pswp-gallery-data" type="application/json">${JSON.stringify(galleryItems)}</script>
 <script src="/assets/app.js" defer></script>
 ${lightboxAssets()}`;
 

@@ -1,10 +1,11 @@
-import { head, header, footer, escapeHtml, imgDims, lightboxAssets, lightboxSource, SITE_URL } from "./_partials.js";
+import { head, header, footer, escapeHtml, imgDims, lightboxAssets, lightboxItem, SITE_URL } from "./_partials.js";
 
 // Recent grid: most recent N photos across all collections.
 export function renderHome({ photos, buildTime }) {
   const tiles = photos.length
     ? photos.map(renderTile).join("\n")
     : `<li class="empty">No public photos yet.</li>`;
+  const galleryItems = photos.map((p) => lightboxItem(p));
 
   const body = `<div class="shell">
   ${header()}
@@ -14,6 +15,7 @@ ${tiles}
   </ul>
   ${footer({ buildTime })}
 </div>
+<script id="pswp-gallery-data" type="application/json">${JSON.stringify(galleryItems)}</script>
 ${lightboxAssets()}`;
 
   return `${head({
@@ -32,13 +34,9 @@ function renderTile(p) {
   const src = p.urls.small || p.urls.medium || p.urls.thumb || "";
   const srcset = buildSrcset(p.urls);
   const alt = p.title || "Photograph";
-  const ls = lightboxSource(p);
 
   return `    <li class="photo-tile">
-      <a href="${href}" aria-label="${escapeHtml(alt)}"
-         data-pswp-src="${ls.src}"
-         data-pswp-width="${ls.width}"
-         data-pswp-height="${ls.height}">
+      <a href="${href}" aria-label="${escapeHtml(alt)}">
         <img
           src="${src}"
           ${srcset ? `srcset="${srcset}"` : ""}

@@ -1,13 +1,15 @@
-import { head, header, footer, escapeHtml, imgDims, lightboxAssets, lightboxSource, SITE_URL } from "./_partials.js";
+import { head, header, footer, escapeHtml, imgDims, lightboxAssets, lightboxItem, SITE_URL } from "./_partials.js";
 
 export function renderCollection({ collection, photos, buildTime }) {
-  const tiles = collection.photoIds.length
-    ? collection.photoIds
-        .map((id) => photos[id])
-        .filter(Boolean)
-        .map(renderTile)
-        .join("\n")
+  const photoList = collection.photoIds
+    .map((id) => photos[id])
+    .filter(Boolean);
+  const tiles = photoList.length
+    ? photoList.map(renderTile).join("\n")
     : `<li class="empty">This collection is empty.</li>`;
+  const galleryItems = photoList.map((p) =>
+    lightboxItem(p, { albumTitle: collection.title }),
+  );
 
   const body = `<div class="shell">
   ${header()}
@@ -19,6 +21,7 @@ ${tiles}
   </ul>
   ${footer({ buildTime })}
 </div>
+<script id="pswp-gallery-data" type="application/json">${JSON.stringify(galleryItems)}</script>
 ${lightboxAssets()}`;
 
   const cover = collection.photoIds
@@ -43,13 +46,9 @@ function renderTile(p) {
   const src = p.urls.medium || p.urls.small || p.urls.thumb || "";
   const srcset = buildSrcset(p.urls);
   const alt = p.title || "Photograph";
-  const ls = lightboxSource(p);
 
   return `    <li class="photo-tile">
-      <a href="${href}" aria-label="${escapeHtml(alt)}"
-         data-pswp-src="${ls.src}"
-         data-pswp-width="${ls.width}"
-         data-pswp-height="${ls.height}">
+      <a href="${href}" aria-label="${escapeHtml(alt)}">
         <img
           src="${src}"
           ${srcset ? `srcset="${srcset}"` : ""}

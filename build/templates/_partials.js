@@ -102,6 +102,46 @@ export function lightboxSource(photo) {
   return { src: src, width: w, height: h };
 }
 
+// Format a Flickr date_taken value ("YYYY-MM-DD HH:MM:SS") as a human
+// readable date for the caption. Returns empty string for missing input.
+export function formatDate(iso) {
+  if (!iso) return "";
+  var m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return iso;
+  var months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+  ];
+  return months[parseInt(m[2], 10) - 1] + " " + parseInt(m[3], 10) + ", " + m[1];
+}
+
+// Build a complete PhotoSwipe data item with metadata for the in-viewer
+// caption panel. opts.albumTitle is used when the photo is being rendered
+// in the context of a specific album sequence (the photo detail page).
+export function lightboxItem(photo, opts) {
+  opts = opts || {};
+  var ls = lightboxSource(photo);
+  var e = photo.exif || {};
+  return {
+    id: photo.id,
+    src: ls.src,
+    width: ls.width,
+    height: ls.height,
+    msrc: photo.urls.medium || photo.urls.small || "",
+    alt: photo.title || "",
+    href: "/p/" + photo.id + "/",
+    title: photo.title || "",
+    caption: photo.caption || "",
+    camera: e.camera || "",
+    lens: e.lens || "",
+    focal: e.focal || "",
+    exposure: e.exposure || "",
+    date: formatDate(photo.dateTaken || ""),
+    location: photo.location || "",
+    album: opts.albumTitle || photo.collectionTitle || "",
+  };
+}
+
 // Format a byte count as a human-readable string. 1.23 GB style.
 export function formatBytes(n) {
   if (!n) return "0 B";
