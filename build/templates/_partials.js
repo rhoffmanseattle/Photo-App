@@ -72,6 +72,36 @@ export function escapeAttr(s) {
   return escapeHtml(s);
 }
 
+// PhotoSwipe v5 (UMD bundles via jsdelivr) + the local lightbox.js init.
+// Include on any page that has photo grids or the photo detail hero.
+export function lightboxAssets() {
+  return `<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@5.4.4/dist/photoswipe.css" />
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@5.4.4/dist/umd/photoswipe.umd.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@5.4.4/dist/umd/photoswipe-lightbox.umd.min.js" defer></script>
+<script src="/assets/lightbox.js" defer></script>`;
+}
+
+// Pick the largest reasonably-sized URL for the lightbox view. Prefer
+// 2K/3K variants when available (good detail without huge downloads),
+// fall back through the chain. Returns the URL, plus the dims of that
+// variant so PhotoSwipe knows what to expect.
+//
+// Note: dims for the smaller resized variants are computed proportionally
+// from the original dims since Flickr's API only returns dims for the
+// variants we explicitly requested. We have dims.large and dims.original.
+export function lightboxSource(photo) {
+  var u = photo.urls || {};
+  var d = photo.dims || {};
+  // Prefer the largest publicly-served variant
+  var src = u["3k"] || u.k || u.h || u.large || u.medium || u.small || "";
+
+  // Use the original dims (true natural size) if available, else large dims
+  var w = (d.original && d.original.w) || (d.large && d.large.w) || 1024;
+  var h = (d.original && d.original.h) || (d.large && d.large.h) || 768;
+
+  return { src: src, width: w, height: h };
+}
+
 // Format a byte count as a human-readable string. 1.23 GB style.
 export function formatBytes(n) {
   if (!n) return "0 B";

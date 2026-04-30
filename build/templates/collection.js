@@ -1,4 +1,4 @@
-import { head, header, footer, escapeHtml, imgDims, SITE_URL } from "./_partials.js";
+import { head, header, footer, escapeHtml, imgDims, lightboxAssets, lightboxSource, SITE_URL } from "./_partials.js";
 
 export function renderCollection({ collection, photos, buildTime }) {
   const tiles = collection.photoIds.length
@@ -14,11 +14,12 @@ export function renderCollection({ collection, photos, buildTime }) {
   <p class="section-label"><a href="/c/">collections</a> / ${escapeHtml(collection.title)}</p>
   <h2 class="display">${escapeHtml(collection.title)}</h2>
   ${collection.description ? `<p class="lede">${escapeHtml(collection.description)}</p>` : ""}
-  <ul class="photo-grid">
+  <ul class="photo-grid" data-pswp-gallery>
 ${tiles}
   </ul>
   ${footer({ buildTime })}
-</div>`;
+</div>
+${lightboxAssets()}`;
 
   const cover = collection.photoIds
     .map((id) => photos[id])
@@ -42,9 +43,13 @@ function renderTile(p) {
   const src = p.urls.medium || p.urls.small || p.urls.thumb || "";
   const srcset = buildSrcset(p.urls);
   const alt = p.title || "Photograph";
+  const ls = lightboxSource(p);
 
   return `    <li class="photo-tile">
-      <a href="${href}" aria-label="${escapeHtml(alt)}">
+      <a href="${href}" aria-label="${escapeHtml(alt)}"
+         data-pswp-src="${ls.src}"
+         data-pswp-width="${ls.width}"
+         data-pswp-height="${ls.height}">
         <img
           src="${src}"
           ${srcset ? `srcset="${srcset}"` : ""}

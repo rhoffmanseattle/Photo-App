@@ -1,12 +1,28 @@
-import { head, header, escapeHtml, SITE_URL } from "./_partials.js";
+import { head, header, escapeHtml, lightboxAssets, lightboxSource, SITE_URL } from "./_partials.js";
 
-export function renderPhoto({ photo, collection, prev, next }) {
+export function renderPhoto({ photo, collection, prev, next, albumPhotos }) {
   const exifRows = renderExifRows(photo);
   const ogImage = photo.urls.large || photo.urls.medium || "";
   const heroSrc = photo.urls.large || photo.urls.medium || photo.urls.small || "";
   const heroSrcset = buildSrcset(photo.urls);
   const collectionHref = collection ? `/c/${collection.slug}/` : "/";
   const collectionTitle = collection ? collection.title : "All photos";
+
+  // Album sequence for the lightbox: every photo in this collection,
+  // in order, with the lightbox source URL and natural dims.
+  const galleryItems = (albumPhotos || [photo]).map((p) => {
+    const ls = lightboxSource(p);
+    return {
+      id: p.id,
+      src: ls.src,
+      width: ls.width,
+      height: ls.height,
+      msrc: p.urls.medium || p.urls.small || "",
+      alt: p.title || "",
+    };
+  });
+
+  const heroLs = lightboxSource(photo);
 
   const description = photo.caption
     ? truncate(photo.caption, 160)
@@ -29,15 +45,21 @@ export function renderPhoto({ photo, collection, prev, next }) {
   data-next="${next ? `/p/${next.id}/` : ""}"
   data-collection="${collectionHref}"
 >
-  <div class="photo-stage">
-    <img
-      src="${heroSrc}"
-      ${heroSrcset ? `srcset="${heroSrcset}"` : ""}
-      sizes="(max-width: 900px) 100vw, calc(100vw - 380px)"
-      alt="${escapeHtml(photo.title || "Photograph")}"
-      decoding="async"
-      fetchpriority="high"
-    />
+  <div class="photo-stage" data-pswp-gallery>
+    <a href="${heroLs.src}"
+       data-pswp-src="${heroLs.src}"
+       data-pswp-width="${heroLs.width}"
+       data-pswp-height="${heroLs.height}"
+       aria-label="Open ${escapeHtml(photo.title || "photo")} in fullscreen viewer">
+      <img
+        src="${heroSrc}"
+        ${heroSrcset ? `srcset="${heroSrcset}"` : ""}
+        sizes="(max-width: 900px) 100vw, calc(100vw - 380px)"
+        alt="${escapeHtml(photo.title || "Photograph")}"
+        decoding="async"
+        fetchpriority="high"
+      />
+    </a>
   </div>
   <aside class="photo-meta">
     <div>
@@ -52,7 +74,10 @@ export function renderPhoto({ photo, collection, prev, next }) {
     </nav>
   </aside>
 </main>
-<script src="/assets/app.js" defer></script>`;
+<script>window.PHOTO_PAGE_ID = ${JSON.stringify(photo.id)};</script>
+<script id="photo-page-gallery" type="application/json">${JSON.stringify(galleryItems)}</script>
+<script src="/assets/app.js" defer></script>
+${lightboxAssets()}`;
 
   return `${head({
     title: photo.title || `Photo ${photo.id}`,

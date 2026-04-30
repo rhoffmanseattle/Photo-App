@@ -1,4 +1,4 @@
-import { head, header, footer, escapeHtml, imgDims, SITE_URL } from "./_partials.js";
+import { head, header, footer, escapeHtml, imgDims, lightboxAssets, lightboxSource, SITE_URL } from "./_partials.js";
 
 // Recent grid: most recent N photos across all collections.
 export function renderHome({ photos, buildTime }) {
@@ -9,11 +9,12 @@ export function renderHome({ photos, buildTime }) {
   const body = `<div class="shell">
   ${header()}
   <p class="section-label">recent</p>
-  <ul class="photo-grid photo-grid--dense">
+  <ul class="photo-grid photo-grid--dense" data-pswp-gallery>
 ${tiles}
   </ul>
   ${footer({ buildTime })}
-</div>`;
+</div>
+${lightboxAssets()}`;
 
   return `${head({
     title: "",
@@ -31,9 +32,13 @@ function renderTile(p) {
   const src = p.urls.small || p.urls.medium || p.urls.thumb || "";
   const srcset = buildSrcset(p.urls);
   const alt = p.title || "Photograph";
+  const ls = lightboxSource(p);
 
   return `    <li class="photo-tile">
-      <a href="${href}" aria-label="${escapeHtml(alt)}">
+      <a href="${href}" aria-label="${escapeHtml(alt)}"
+         data-pswp-src="${ls.src}"
+         data-pswp-width="${ls.width}"
+         data-pswp-height="${ls.height}">
         <img
           src="${src}"
           ${srcset ? `srcset="${srcset}"` : ""}

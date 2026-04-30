@@ -512,11 +512,17 @@ async function renderSite({ photoIndex, allPhotos, collections, cameras, stats }
       const prev = prevId ? photoIndex[prevId] : null;
       const next = nextId ? photoIndex[nextId] : null;
 
+      // Build the album sequence for the lightbox: every photo in this
+      // collection in order, used as the swipe gallery on the detail page.
+      const albumPhotos = c.photoIds
+        .map((pid) => photoIndex[pid])
+        .filter(Boolean);
+
       const dir = path.join(DIST, "p", p.id);
       await ensureDir(dir);
       await writeFile(
         path.join(dir, "index.html"),
-        renderPhoto({ photo: p, collection: c, prev, next }),
+        renderPhoto({ photo: p, collection: c, prev, next, albumPhotos }),
       );
       photoCount++;
     }
