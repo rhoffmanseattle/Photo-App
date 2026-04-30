@@ -538,22 +538,83 @@ button {
 
 /* --- Lightbox metadata panel -------------------------------- */
 
+/* Outer shell is a transparent positioning layer. Pointer events fall
+   through to the photo by default; only the toggle button and inner
+   content panel opt in. This way the gradient/content can collapse
+   without dragging the toggle button along with it. */
 .pswp-meta {
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 1050; /* above PhotoSwipe content, below modal-style UI */
-  pointer-events: auto;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.7) 60%, rgba(0, 0, 0, 0) 100%);
+  z-index: 1050;
+  pointer-events: none;
   color: #f5f5f3;
-  padding: 2.5rem 1.75rem 1.5rem;
-  transition: opacity 220ms ease, transform 220ms ease;
 }
 
 .pswp-meta__inner {
+  pointer-events: auto;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.7) 60%, rgba(0, 0, 0, 0) 100%);
+  padding: 2.5rem 1.75rem 1.5rem;
+  max-width: 100%;
+  transform: translateY(0);
+  opacity: 1;
+  transition: transform 240ms ease, opacity 240ms ease;
+}
+
+.pswp-meta__inner > * {
   max-width: 720px;
-  margin: 0 auto;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.pswp-meta--collapsed .pswp-meta__inner {
+  transform: translateY(100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Toggle button. Sits at bottom-right, stays visible whether the
+   panel is expanded or collapsed. Chevron icon rotates to telegraph
+   the next action (down = will collapse, up = will expand). */
+.pswp-meta__toggle {
+  pointer-events: auto;
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20, 20, 20, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+  color: #fff;
+  cursor: pointer;
+  padding: 0;
+  z-index: 2;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.pswp-meta__toggle:hover,
+.pswp-meta__toggle:focus-visible {
+  background: rgba(20, 20, 20, 0.85);
+  border-color: rgba(255, 255, 255, 0.4);
+  outline: none;
+}
+
+.pswp-meta__chevron {
+  width: 9px;
+  height: 9px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 220ms ease;
+}
+
+.pswp-meta--collapsed .pswp-meta__chevron {
+  transform: translateY(2px) rotate(-135deg);
 }
 
 .pswp-meta__title {
@@ -611,12 +672,17 @@ button {
   color: #fff;
 }
 
-/* On mobile, the meta panel inherits PhotoSwipe's tap-toggle chrome
-   behavior. When the user taps the photo to clear the UI, the panel
-   slides out alongside the close button. On desktop tap-toggle still
-   works but desktop users typically leave the chrome on. */
+/* When PhotoSwipe's chrome is tap-hidden (mobile) or otherwise toggled,
+   fade out our toggle button alongside it. The inner panel also fades
+   on small viewports so a tap on the photo clears for clean viewing. */
+.pswp--ui-hidden .pswp-meta__toggle {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms ease;
+}
+
 @media (max-width: 720px) {
-  .pswp-meta {
+  .pswp-meta__inner {
     padding: 1.75rem 1rem 1rem;
   }
 
@@ -628,7 +694,7 @@ button {
     font-size: 0.8125rem;
   }
 
-  .pswp--ui-hidden .pswp-meta {
+  .pswp--ui-hidden .pswp-meta__inner {
     opacity: 0;
     transform: translateY(0.5rem);
     pointer-events: none;

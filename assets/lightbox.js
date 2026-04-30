@@ -91,9 +91,27 @@
         html: "",
         onInit: function (el, pswpInstance) {
           el.classList.add("pswp-meta");
+          el.innerHTML =
+            '<button type="button" class="pswp-meta__toggle" aria-label="Hide photo info" aria-expanded="true">' +
+            '<span class="pswp-meta__chevron" aria-hidden="true"></span>' +
+            "</button>" +
+            '<div class="pswp-meta__inner"></div>';
+
+          var inner = el.querySelector(".pswp-meta__inner");
+          var toggle = el.querySelector(".pswp-meta__toggle");
+
+          toggle.addEventListener("click", function () {
+            var collapsed = el.classList.toggle("pswp-meta--collapsed");
+            toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+            toggle.setAttribute(
+              "aria-label",
+              collapsed ? "Show photo info" : "Hide photo info",
+            );
+          });
+
           var update = function () {
             var item = pswpInstance.currSlide && pswpInstance.currSlide.data;
-            el.innerHTML = renderCaption(item);
+            inner.innerHTML = renderCaption(item);
           };
           pswpInstance.on("change", update);
           pswpInstance.on("afterInit", update);
