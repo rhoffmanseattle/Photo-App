@@ -20,6 +20,7 @@ import { renderAbout } from "./templates/about.js";
 import { renderCamerasIndex } from "./templates/cameras-index.js";
 import { renderCamera } from "./templates/camera.js";
 import { renderMap } from "./templates/map.js";
+import { renderFeed } from "./templates/feed.js";
 import { displayCamera, isCameraHidden } from "./camera-aliases.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -479,6 +480,13 @@ async function renderSite({ photoIndex, allPhotos, collections, cameras, stats }
     renderHome({ photos: sortedRecent, buildTime }),
   );
   console.log(`[render] / (${sortedRecent.length} photos)`);
+
+  // RSS feed of recent photos (mirrors home page sort, separate cap).
+  await writeFile(
+    path.join(DIST, "feed.xml"),
+    renderFeed({ photos: allPhotos, buildTime }),
+  );
+  console.log(`[render] /feed.xml`);
 
   await ensureDir(path.join(DIST, "c"));
   await writeFile(

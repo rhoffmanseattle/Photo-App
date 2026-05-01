@@ -25,6 +25,7 @@ export function head({ title, description, ogImage, ogUrl, extra = "" }) {
   <link rel="dns-prefetch" href="https://live.staticflickr.com" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Inconsolata:wght@400;500&family=Inter:wght@400;500&display=swap" />
   <link rel="stylesheet" href="/assets/style.css" />
+  <link rel="alternate" type="application/rss+xml" title="${escapeAttr(SITE_TITLE)}" href="/feed.xml" />
   <meta property="og:type" content="${image ? "article" : "website"}" />
   <meta property="og:title" content="${escapeAttr(fullTitle)}" />
   <meta property="og:description" content="${escapeAttr(desc)}" />
@@ -54,7 +55,7 @@ export function footer({ buildTime } = {}) {
     : new Date().toISOString().slice(0, 10);
   return `<footer class="site-footer">
   <span>© ${new Date().getFullYear()} Ryan Hoffman</span>
-  <span>built ${escapeHtml(stamp)} · <a href="https://www.flickr.com/photos/76894493@N00/">flickr</a></span>
+  <span>built ${escapeHtml(stamp)} · <a href="https://www.flickr.com/photos/76894493@N00/">flickr</a> · <a href="/feed.xml">rss</a></span>
 </footer>`;
 }
 
