@@ -17,6 +17,7 @@ export const CAMERA_ALIASES = {
   "Canon EOS DIGITAL REBEL XTi": "Canon EOS Rebel XTi",
   "Apple iPhone": "iPhone",
   "OLYMPUS IMAGING CORP. E-PM1": "Olympus PEN E-PM1",
+  "OLYMPUS IMAGING CORP. E-M5MarkII": "Olympus E-M5 MarkII",
   "Panasonic DMC-LX10": "Panasonic Lumix LX10",
 };
 
