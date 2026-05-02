@@ -265,6 +265,18 @@ button {
   opacity: 1;
 }
 
+/* Infinite-scroll sentinel: zero-height marker the IntersectionObserver
+   in /assets/home-infinite.js watches. Lives inside the masonry as a
+   final <li> so the column flow stays uninterrupted; takes no space. */
+.photo-grid__sentinel {
+  break-inside: avoid;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  pointer-events: none;
+}
+
 /* --- Collections index -------------------------------------- */
 
 .collection-list {

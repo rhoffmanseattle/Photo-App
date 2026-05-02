@@ -16,10 +16,17 @@
 (function () {
   "use strict";
 
+  // Module-scoped so window.PhotoGallery.extend() (used by
+  // home-infinite.js) can append new items to the same dataSource the
+  // initial click handlers were bound against. Index integrity holds
+  // because we only ever append: an anchor registered with index N
+  // stays at dataSource[N] for the lifetime of the page.
+  var dataSource = null;
+
   function init() {
     if (typeof PhotoSwipe === "undefined") return;
 
-    var dataSource = readGalleryData();
+    dataSource = readGalleryData();
     if (!dataSource || !dataSource.length) return;
 
     initGalleryClicks(dataSource);
@@ -45,13 +52,37 @@
 
     var anchors = Array.from(grid.querySelectorAll(":scope > li > a"));
     anchors.forEach(function (anchor, index) {
-      anchor.addEventListener("click", function (e) {
-        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
-        e.preventDefault();
-        openLightbox(dataSource, index);
-      });
+      bindAnchor(anchor, index);
     });
   }
+
+  // Bind a single anchor's click handler so it opens the lightbox at
+  // the given dataSource index. Used both during initial gallery
+  // wiring and by extend() for newly appended infinite-scroll tiles.
+  function bindAnchor(anchor, index) {
+    anchor.addEventListener("click", function (e) {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+      e.preventDefault();
+      openLightbox(dataSource, index);
+    });
+  }
+
+  // Called by home-infinite.js after appending a batch of tiles.
+  // Adds the lightbox metadata to dataSource and binds click
+  // handlers on the matching anchors. items[i] corresponds to
+  // anchors[i]; both arrays must be the same length and in
+  // grid-append order.
+  window.PhotoGallery = {
+    extend: function (items, anchors) {
+      if (!dataSource || !items || !anchors) return;
+      if (items.length !== anchors.length) return;
+      var startIndex = dataSource.length;
+      for (var i = 0; i < items.length; i++) {
+        dataSource.push(items[i]);
+        bindAnchor(anchors[i], startIndex + i);
+      }
+    },
+  };
 
   // Photo detail page: hero <a> opens viewer at the current photo's
   // position within its album sequence (matched by id).

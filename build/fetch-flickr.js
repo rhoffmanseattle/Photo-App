@@ -12,7 +12,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { slugify, formatBytes } from "./templates/_partials.js";
-import { renderHome } from "./templates/home.js";
+import { renderHome, renderHomeTile, HOME_INITIAL_COUNT, HOME_BATCH_SIZE } from "./templates/home.js";
+import { lightboxItem } from "./templates/_partials.js";
 import { renderCollectionsIndex } from "./templates/collections-index.js";
 import { renderCollection } from "./templates/collection.js";
 import { renderPhoto } from "./templates/photo.js";
@@ -31,7 +32,8 @@ const ASSETS_SRC = path.join(ROOT, "assets");
 
 const API_KEY = process.env.FLICKR_API_KEY;
 const USER_ID = process.env.FLICKR_USER_ID;
-const HOME_RECENT_LIMIT = 60;
+// Initial server-rendered count is owned by the home template; we
+// import it so the build stays in lockstep with what the page knows.
 const EXIF_CONCURRENCY = 5;
 const SIZE_CONCURRENCY = 10;
 
@@ -472,14 +474,37 @@ async function renderSite({ photoIndex, allPhotos, collections, cameras, stats }
       if (db !== da) return db - da;
       // Fall back to dateTaken if upload timestamps tie (very unlikely)
       return (b.dateTaken || "").localeCompare(a.dateTaken || "");
-    })
-    .slice(0, HOME_RECENT_LIMIT);
+    });
 
+  // The home template slices internally: first HOME_INITIAL_COUNT
+  // tiles render server-side, anything beyond comes from the JSON
+  // below via /assets/home-infinite.js as the user scrolls.
   await writeFile(
     path.join(DIST, "index.html"),
     renderHome({ photos: sortedRecent, buildTime }),
   );
-  console.log(`[render] / (${sortedRecent.length} photos)`);
+  const initialOnHome = Math.min(sortedRecent.length, HOME_INITIAL_COUNT);
+  console.log(`[render] / (${initialOnHome} of ${sortedRecent.length} photos initial)`);
+
+  // Data file feeding the home-infinite.js client. Holds only the
+  // photos beyond HOME_INITIAL_COUNT; aligned arrays of pre-rendered
+  // tile HTML and lightbox metadata so the client renders by string
+  // append (no client-side templating drift) and registers each new
+  // tile with PhotoSwipe in one shot.
+  const remaining = sortedRecent.slice(HOME_INITIAL_COUNT);
+  const homeRecent = {
+    initialCount: HOME_INITIAL_COUNT,
+    batchSize: HOME_BATCH_SIZE,
+    total: sortedRecent.length,
+    tiles: remaining.map(renderHomeTile),
+    lightbox: remaining.map((p) => lightboxItem(p)),
+  };
+  await ensureDir(path.join(DIST, "data"));
+  await writeFile(
+    path.join(DIST, "data", "home-recent.json"),
+    JSON.stringify(homeRecent),
+  );
+  console.log(`[render] /data/home-recent.json (${remaining.length} additional)`);
 
   // RSS feed of recent photos (mirrors home page sort, separate cap).
   await writeFile(
