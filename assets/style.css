@@ -288,6 +288,23 @@ button {
   gap: 2rem 1.5rem;
 }
 
+/* Section heading used on the gear page (Cameras / Lenses) and the
+   <hr> that separates them. The heading uses the display face for
+   continuity with the page lede; the rule is a thin neutral line. */
+.gear-section-heading {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.75rem;
+  line-height: 1.2;
+  margin: 0 0 1.25rem;
+}
+
+.gear-section-rule {
+  border: 0;
+  border-top: 1px solid var(--rule);
+  margin: 3rem 0 2.5rem;
+}
+
 .collection-card a {
   display: block;
   border: 0;

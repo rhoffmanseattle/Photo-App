@@ -39,6 +39,28 @@ function renderStats(stats) {
     ? `      <dt class="stats-faint">no camera EXIF</dt><dd class="stats-faint">${stats.photosWithoutExif}</dd>`
     : "";
 
+  const lensCounts = stats.lensCounts || [];
+  const lensRows = lensCounts
+    .slice()
+    .sort((a, b) => b.count - a.count)
+    .map(
+      (l) =>
+        `      <dt><a href="/l/${l.slug}/">${escapeHtml(l.title)}</a></dt><dd>${l.count}</dd>`,
+    )
+    .join("\n");
+
+  const noLensRow = stats.photosWithoutLensExif
+    ? `      <dt class="stats-faint">no lens EXIF</dt><dd class="stats-faint">${stats.photosWithoutLensExif}</dd>`
+    : "";
+
+  const lensSection = lensCounts.length
+    ? `    <h4 class="section-label section-label--sub">photos per lens</h4>
+    <dl class="stats-cameras">
+${lensRows}
+${noLensRow}
+    </dl>`
+    : "";
+
   return `  <section class="stats">
     <h3 class="section-label">archive stats</h3>
     <dl class="stats-summary">
@@ -50,5 +72,6 @@ function renderStats(stats) {
 ${cameraRows}
 ${noExifRow}
     </dl>
+${lensSection}
   </section>`;
 }

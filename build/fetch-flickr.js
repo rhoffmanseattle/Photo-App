@@ -20,9 +20,11 @@ import { renderPhoto } from "./templates/photo.js";
 import { renderAbout } from "./templates/about.js";
 import { renderCamerasIndex } from "./templates/cameras-index.js";
 import { renderCamera } from "./templates/camera.js";
+import { renderLens } from "./templates/lens.js";
 import { renderMap } from "./templates/map.js";
 import { renderFeed } from "./templates/feed.js";
 import { displayCamera, isCameraHidden } from "./camera-aliases.js";
+import { displayLens, isLensHidden } from "./lens-aliases.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -159,18 +161,23 @@ async function main() {
   const cameras = computeCameraGroups(allPhotos);
   console.log(`[group] ${cameras.length} cameras (${allPhotos.filter(p => p.exif && p.exif.camera).length} of ${allPhotos.length} photos have camera EXIF)`);
 
-  // 7. Write JSON artifacts (handy for debugging / future tooling)
+  // 7b. Compute lens groups from EXIF
+  const lenses = computeLensGroups(allPhotos);
+  console.log(`[group] ${lenses.length} lenses (${allPhotos.filter(p => p.exif && p.exif.lens).length} of ${allPhotos.length} photos have lens EXIF)`);
+
+  // 7c. Write JSON artifacts (handy for debugging / future tooling)
   await fs.writeFile(path.join(DATA, "photos.json"), JSON.stringify(photoIndex, null, 2));
   await fs.writeFile(path.join(DATA, "collections.json"), JSON.stringify(collections, null, 2));
   await fs.writeFile(path.join(DATA, "cameras.json"), JSON.stringify(cameras, null, 2));
-  console.log(`[write] data/photos.json (${allPhotos.length}), data/collections.json (${collections.length}), data/cameras.json (${cameras.length})`);
+  await fs.writeFile(path.join(DATA, "lenses.json"), JSON.stringify(lenses, null, 2));
+  console.log(`[write] data/photos.json (${allPhotos.length}), data/collections.json (${collections.length}), data/cameras.json (${cameras.length}), data/lenses.json (${lenses.length})`);
 
   // 8. Compute stats for the about page
-  const stats = computeStats({ allPhotos, cameras });
-  console.log(`[stats] ${stats.totalPhotos} photos, ${formatBytes(stats.totalBytes)}, ${stats.cameraCounts.length} cameras`);
+  const stats = computeStats({ allPhotos, cameras, lenses });
+  console.log(`[stats] ${stats.totalPhotos} photos, ${formatBytes(stats.totalBytes)}, ${stats.cameraCounts.length} cameras, ${stats.lensCounts.length} lenses`);
 
   // 9. Render pages
-  await renderSite({ photoIndex, allPhotos, collections, cameras, stats });
+  await renderSite({ photoIndex, allPhotos, collections, cameras, lenses, stats });
 
   // 10. Copy assets
   await copyDir(ASSETS_SRC, path.join(DIST, "assets"));
@@ -250,7 +257,7 @@ async function measureUrlBytes(url) {
 
 // --- Stats --------------------------------------------------------
 
-function computeStats({ allPhotos, cameras }) {
+function computeStats({ allPhotos, cameras, lenses }) {
   const totalPhotos = allPhotos.length;
   const totalBytes = allPhotos.reduce((sum, p) => sum + (p.bytes || 0), 0);
   const sizedPhotos = allPhotos.filter((p) => (p.bytes || 0) > 0).length;
@@ -261,8 +268,18 @@ function computeStats({ allPhotos, cameras }) {
     count: c.photoIds.length,
   }));
 
+  const lensCounts = (lenses || []).map((l) => ({
+    title: l.title,
+    slug: l.slug,
+    count: l.photoIds.length,
+  }));
+
   const photosWithoutExif = allPhotos.filter(
     (p) => !p.exif || !p.exif.camera,
+  ).length;
+
+  const photosWithoutLensExif = allPhotos.filter(
+    (p) => !p.exif || !p.exif.lens,
   ).length;
 
   return {
@@ -270,7 +287,9 @@ function computeStats({ allPhotos, cameras }) {
     totalBytes,
     sizedPhotos,
     cameraCounts,
+    lensCounts,
     photosWithoutExif,
+    photosWithoutLensExif,
   };
 }
 
@@ -295,6 +314,54 @@ function computeCameraGroups(allPhotos) {
       });
     }
     const g = groups.get(cameraDisplay);
+    g.photoIds.push(p.id);
+    const d = p.dateTaken || p.dateUpload || "";
+    if (d > g.latestDate) g.latestDate = d;
+  }
+
+  // Sort photos within each group by date desc
+  for (const g of groups.values()) {
+    g.photoIds.sort((a, b) => {
+      const pa = allPhotos.find((p) => p.id === a);
+      const pb = allPhotos.find((p) => p.id === b);
+      const da = (pa && (pa.dateTaken || pa.dateUpload)) || "";
+      const db = (pb && (pb.dateTaken || pb.dateUpload)) || "";
+      return db.localeCompare(da);
+    });
+  }
+
+  // Sort groups by latest activity, newest first
+  const list = Array.from(groups.values()).sort((a, b) =>
+    b.latestDate.localeCompare(a.latestDate),
+  );
+
+  // Disambiguate slug collisions
+  dedupeSlugs(list);
+
+  return list;
+}
+
+// --- Lens grouping ------------------------------------------------
+
+function computeLensGroups(allPhotos) {
+  const groups = new Map(); // displayName -> { title, photoIds, latestDate }
+
+  for (const p of allPhotos) {
+    const lensDisplay = p.exif && p.exif.lens;
+    const lensRaw = (p.exif && p.exif.lensRaw) || lensDisplay;
+    if (!lensDisplay) continue; // skip photos with no lens EXIF
+    if (lensRaw && isLensHidden(lensRaw)) continue;
+    if (lensDisplay && isLensHidden(lensDisplay)) continue;
+
+    if (!groups.has(lensDisplay)) {
+      groups.set(lensDisplay, {
+        title: lensDisplay,
+        slug: slugify(lensDisplay),
+        photoIds: [],
+        latestDate: "",
+      });
+    }
+    const g = groups.get(lensDisplay);
     g.photoIds.push(p.id);
     const d = p.dateTaken || p.dateUpload || "";
     if (d > g.latestDate) g.latestDate = d;
@@ -440,7 +507,8 @@ function extractExif(exifResp) {
   // Apply alias map for display.
   const camera = displayCamera(cameraRaw);
 
-  const lens = byTag.LensModel || byTag.Lens || "";
+  const lensRaw = (byTag.LensModel || byTag.Lens || "").trim();
+  const lens = displayLens(lensRaw);
 
   let focal = "";
   if (byTag.FocalLength) focal = byTag.FocalLength;
@@ -456,12 +524,12 @@ function extractExif(exifResp) {
   if (byTag.ISO) exposureBits.push(`ISO ${byTag.ISO}`);
   const exposure = exposureBits.join(" · ");
 
-  return { camera, cameraRaw, lens, focal, exposure, raw: byTag };
+  return { camera, cameraRaw, lens, lensRaw, focal, exposure, raw: byTag };
 }
 
 // --- Renderer ------------------------------------------------------
 
-async function renderSite({ photoIndex, allPhotos, collections, cameras, stats }) {
+async function renderSite({ photoIndex, allPhotos, collections, cameras, lenses, stats }) {
   // Sort photos by Flickr upload timestamp (newest first) for the homepage.
   // This is what readers experience as "recent" — when something appeared on
   // the site — not when the shutter clicked. Archive uploads (a 2018 photo
@@ -562,13 +630,13 @@ async function renderSite({ photoIndex, allPhotos, collections, cameras, stats }
   }
   console.log(`[render] /p/{id}/ (${photoCount} pages)`);
 
-  // Camera group pages
+  // Camera + lens group pages
   await ensureDir(path.join(DIST, "g"));
   await writeFile(
     path.join(DIST, "g", "index.html"),
-    renderCamerasIndex({ cameras, photos: photoIndex, buildTime }),
+    renderCamerasIndex({ cameras, lenses, photos: photoIndex, buildTime }),
   );
-  console.log(`[render] /g/ (${cameras.length} cameras)`);
+  console.log(`[render] /g/ (${cameras.length} cameras, ${lenses.length} lenses)`);
 
   for (const cam of cameras) {
     const dir = path.join(DIST, "g", cam.slug);
@@ -578,6 +646,19 @@ async function renderSite({ photoIndex, allPhotos, collections, cameras, stats }
       renderCamera({ camera: cam, photos: photoIndex, buildTime }),
     );
   }
+
+  // Lens detail pages live under /l/{slug}/ to keep the namespace clean
+  // and avoid slug collisions with cameras.
+  await ensureDir(path.join(DIST, "l"));
+  for (const lens of lenses) {
+    const dir = path.join(DIST, "l", lens.slug);
+    await ensureDir(dir);
+    await writeFile(
+      path.join(dir, "index.html"),
+      renderLens({ lens, photos: photoIndex, buildTime }),
+    );
+  }
+  console.log(`[render] /l/{slug}/ (${lenses.length} pages)`);
 
   // Map page (geotagged photos plotted on a Leaflet map)
   const geotagged = allPhotos.filter((p) => p.geo && (p.geo.lat !== 0 || p.geo.lng !== 0));
