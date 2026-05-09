@@ -282,6 +282,20 @@ function computeStats({ allPhotos, cameras, lenses }) {
     (p) => !p.exif || !p.exif.lens,
   ).length;
 
+  // Focal-length / aperture scatter — every photo whose EXIF carries
+  // both numbers gets one point on the About page chart. Pulled from
+  // the raw EXIF tags so we have proper numeric values, not the
+  // pre-formatted strings ("47.0 mm", "f/5.6") used elsewhere.
+  const scatterPoints = [];
+  for (const p of allPhotos) {
+    const raw = (p.exif && p.exif.raw) || {};
+    const focalMm = parseFocalMm(raw.FocalLength);
+    const fNumber = parseFNumber(raw.FNumber);
+    if (focalMm > 0 && fNumber > 0) {
+      scatterPoints.push({ focalMm, fNumber });
+    }
+  }
+
   return {
     totalPhotos,
     totalBytes,
@@ -290,7 +304,24 @@ function computeStats({ allPhotos, cameras, lenses }) {
     lensCounts,
     photosWithoutExif,
     photosWithoutLensExif,
+    scatterPoints,
   };
+}
+
+// Pull a numeric mm value out of a Flickr FocalLength tag like "47.0 mm"
+// or "10.2 mm". Returns 0 when no usable number is present.
+function parseFocalMm(s) {
+  if (!s) return 0;
+  const m = String(s).match(/(\d+(?:\.\d+)?)/);
+  return m ? parseFloat(m[1]) : 0;
+}
+
+// FNumber comes through as a bare number ("5.6") or occasionally with a
+// leading "f/". Either way we just want the float.
+function parseFNumber(s) {
+  if (!s) return 0;
+  const m = String(s).match(/(\d+(?:\.\d+)?)/);
+  return m ? parseFloat(m[1]) : 0;
 }
 
 

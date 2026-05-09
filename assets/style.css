@@ -805,6 +805,25 @@ button {
   color: var(--ink-faint) !important;
 }
 
+.stats-note {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--ink-faint);
+  margin: 0.5rem 0 0.75rem;
+}
+
+.stats-scatter {
+  margin: 0;
+  padding: 0;
+}
+
+.stats-scatter svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+}
+
 /* --- Empty state -------------------------------------------- */
 
 .empty {

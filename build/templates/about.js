@@ -61,6 +61,8 @@ ${noLensRow}
     </dl>`
     : "";
 
+  const scatterSection = renderFocalApertureScatter(stats.scatterPoints || []);
+
   return `  <section class="stats">
     <h3 class="section-label">archive stats</h3>
     <dl class="stats-summary">
@@ -73,5 +75,119 @@ ${cameraRows}
 ${noExifRow}
     </dl>
 ${lensSection}
+${scatterSection}
   </section>`;
+}
+
+// Inline SVG scatter of focal length (X, log) vs aperture (Y, log).
+// Purely informational: one dot per photo whose EXIF carries both
+// numbers. Log-scaled because both quantities are perceptually
+// multiplicative (each stop doubles light, each focal-length doubling
+// halves the field of view).
+function renderFocalApertureScatter(points) {
+  if (!points || !points.length) return "";
+
+  // Plot dimensions. The SVG is responsive (width: 100%) but the
+  // viewBox locks the coordinate space we draw into.
+  const W = 800;
+  const H = 360;
+  const pad = { top: 16, right: 16, bottom: 40, left: 56 };
+  const innerW = W - pad.left - pad.right;
+  const innerH = H - pad.top - pad.bottom;
+
+  // Axis ranges. We anchor on common photographic values and only
+  // expand if the data falls outside them, so the chart looks the
+  // same shape session to session.
+  const focalTicks = [10, 14, 24, 35, 50, 85, 135, 200, 300, 500];
+  const fTicks = [1.4, 2, 2.8, 4, 5.6, 8, 11, 16, 22];
+
+  let focalMin = 10, focalMax = 500;
+  let fMin = 1.4, fMax = 22;
+  for (const p of points) {
+    if (p.focalMm < focalMin) focalMin = p.focalMm;
+    if (p.focalMm > focalMax) focalMax = p.focalMm;
+    if (p.fNumber < fMin) fMin = p.fNumber;
+    if (p.fNumber > fMax) fMax = p.fNumber;
+  }
+  // Round outward in log space so the data has a small breathing margin.
+  focalMin = Math.max(1, Math.pow(2, Math.floor(Math.log2(focalMin))));
+  focalMax = Math.pow(2, Math.ceil(Math.log2(focalMax)));
+  fMin = Math.max(0.7, Math.pow(2, Math.floor(Math.log2(fMin) * 2) / 2));
+  fMax = Math.pow(2, Math.ceil(Math.log2(fMax) * 2) / 2);
+
+  const logFocalMin = Math.log(focalMin);
+  const logFocalMax = Math.log(focalMax);
+  const logFMin = Math.log(fMin);
+  const logFMax = Math.log(fMax);
+
+  const xFor = (mm) =>
+    pad.left + ((Math.log(mm) - logFocalMin) / (logFocalMax - logFocalMin)) * innerW;
+  // Aperture grows downward visually: smaller f-number (more light) at top.
+  const yFor = (f) =>
+    pad.top + ((Math.log(f) - logFMin) / (logFMax - logFMin)) * innerH;
+
+  // Frame + gridlines.
+  const frame =
+    `<rect x="${pad.left}" y="${pad.top}" width="${innerW}" height="${innerH}" ` +
+    `fill="none" stroke="var(--rule)" stroke-width="1"/>`;
+
+  const xGrid = focalTicks
+    .filter((t) => t >= focalMin && t <= focalMax)
+    .map((t) => {
+      const x = xFor(t);
+      return (
+        `<line x1="${x.toFixed(1)}" y1="${pad.top}" x2="${x.toFixed(1)}" y2="${pad.top + innerH}" ` +
+        `stroke="var(--rule)" stroke-width="1" stroke-dasharray="2 4"/>` +
+        `<text x="${x.toFixed(1)}" y="${pad.top + innerH + 18}" ` +
+        `text-anchor="middle" font-family="var(--font-mono)" font-size="11" ` +
+        `fill="var(--ink-faint)">${t}</text>`
+      );
+    })
+    .join("");
+
+  const yGrid = fTicks
+    .filter((t) => t >= fMin && t <= fMax)
+    .map((t) => {
+      const y = yFor(t);
+      return (
+        `<line x1="${pad.left}" y1="${y.toFixed(1)}" x2="${pad.left + innerW}" y2="${y.toFixed(1)}" ` +
+        `stroke="var(--rule)" stroke-width="1" stroke-dasharray="2 4"/>` +
+        `<text x="${pad.left - 8}" y="${(y + 4).toFixed(1)}" ` +
+        `text-anchor="end" font-family="var(--font-mono)" font-size="11" ` +
+        `fill="var(--ink-faint)">f/${t}</text>`
+      );
+    })
+    .join("");
+
+  // Axis titles.
+  const xTitle =
+    `<text x="${pad.left + innerW / 2}" y="${H - 6}" ` +
+    `text-anchor="middle" font-family="var(--font-mono)" font-size="11" ` +
+    `fill="var(--ink-soft)">focal length (mm)</text>`;
+  const yTitle =
+    `<text transform="translate(14 ${pad.top + innerH / 2}) rotate(-90)" ` +
+    `text-anchor="middle" font-family="var(--font-mono)" font-size="11" ` +
+    `fill="var(--ink-soft)">aperture</text>`;
+
+  // Points. Low opacity + small radius so density reads as cloud.
+  const dots = points
+    .map((p) => {
+      const x = xFor(p.focalMm).toFixed(1);
+      const y = yFor(p.fNumber).toFixed(1);
+      return `<circle cx="${x}" cy="${y}" r="3" fill="var(--ink)" fill-opacity="0.45"/>`;
+    })
+    .join("");
+
+  return `    <h4 class="section-label section-label--sub">focal length × aperture</h4>
+    <p class="stats-note">${points.length} photo${points.length === 1 ? "" : "s"} with both values in EXIF. Log scales on both axes.</p>
+    <figure class="stats-scatter">
+      <svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Scatter of focal length versus aperture across the archive.">
+        ${frame}
+        ${xGrid}
+        ${yGrid}
+        ${xTitle}
+        ${yTitle}
+        ${dots}
+      </svg>
+    </figure>`;
 }
