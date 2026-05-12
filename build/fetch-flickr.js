@@ -286,13 +286,21 @@ function computeStats({ allPhotos, cameras, lenses }) {
   // both numbers gets one point on the About page chart. Pulled from
   // the raw EXIF tags so we have proper numeric values, not the
   // pre-formatted strings ("47.0 mm", "f/5.6") used elsewhere.
+  //
+  // We also carry the photo id + title so the template can wrap each
+  // dot in a link to /p/{id}/ and surface a hover tooltip.
   const scatterPoints = [];
   for (const p of allPhotos) {
     const raw = (p.exif && p.exif.raw) || {};
     const focalMm = parseFocalMm(raw.FocalLength);
     const fNumber = parseFNumber(raw.FNumber);
     if (focalMm > 0 && fNumber > 0) {
-      scatterPoints.push({ focalMm, fNumber });
+      scatterPoints.push({
+        id: p.id,
+        title: p.title || p.rawTitle || "",
+        focalMm,
+        fNumber,
+      });
     }
   }
 

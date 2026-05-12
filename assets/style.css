@@ -822,6 +822,24 @@ button {
   width: 100%;
   height: auto;
   max-width: 100%;
+  overflow: visible;
+}
+
+.stats-scatter-dot circle {
+  fill: var(--ink);
+  fill-opacity: 0.4;
+  transition: fill-opacity var(--t-fast) var(--ease), r var(--t-fast) var(--ease);
+  cursor: pointer;
+}
+
+.stats-scatter-dot:hover circle,
+.stats-scatter-dot:focus circle {
+  fill-opacity: 1;
+  r: 5;
+}
+
+.stats-scatter-dot:focus {
+  outline: none;
 }
 
 /* --- Empty state -------------------------------------------- */

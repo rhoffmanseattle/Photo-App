@@ -170,11 +170,53 @@ function renderFocalApertureScatter(points) {
     `fill="var(--ink-soft)">aperture</text>`;
 
   // Points. Low opacity + small radius so density reads as cloud.
-  const dots = points
+  // Each dot is wrapped in a link to /p/{id}/ so clicking through
+  // takes you to the source photo, with a <title> tooltip on hover.
+  //
+  // When several photos sit on the exact same (focal, f-number) pair —
+  // e.g. four shots all at 50mm f/1.4 — they would render as a single
+  // pixel and only the topmost would be reachable. We fan stacked
+  // points out in a tiny spiral so every dot is individually clickable
+  // without significantly distorting the visual position.
+  const groups = new Map();
+  for (const p of points) {
+    const key = `${p.focalMm.toFixed(2)}|${p.fNumber.toFixed(2)}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(p);
+  }
+
+  const dotR = 3.5;
+  const spiralStep = 4.5;
+  const placed = [];
+  for (const list of groups.values()) {
+    const baseX = xFor(list[0].focalMm);
+    const baseY = yFor(list[0].fNumber);
+    for (let i = 0; i < list.length; i++) {
+      let dx = 0, dy = 0;
+      if (i > 0) {
+        // Simple radial fan: place each extra point on a ring, with
+        // ~6 points per ring, stepping outward as the ring fills up.
+        const ring = Math.ceil(i / 6);
+        const slot = i - (ring - 1) * 6 - 1;
+        const angle = (slot / 6) * Math.PI * 2 + ring * 0.6;
+        dx = Math.cos(angle) * spiralStep * ring;
+        dy = Math.sin(angle) * spiralStep * ring;
+      }
+      placed.push({ ...list[i], x: baseX + dx, y: baseY + dy });
+    }
+  }
+
+  const dots = placed
     .map((p) => {
-      const x = xFor(p.focalMm).toFixed(1);
-      const y = yFor(p.fNumber).toFixed(1);
-      return `<circle cx="${x}" cy="${y}" r="3" fill="var(--ink)" fill-opacity="0.45"/>`;
+      const x = p.x.toFixed(1);
+      const y = p.y.toFixed(1);
+      const tip = `${p.focalMm} mm · f/${p.fNumber}${p.title ? ` — ${p.title}` : ""}`;
+      return (
+        `<a href="/p/${escapeHtml(p.id)}/" class="stats-scatter-dot">` +
+        `<title>${escapeHtml(tip)}</title>` +
+        `<circle cx="${x}" cy="${y}" r="${dotR}"/>` +
+        `</a>`
+      );
     })
     .join("");
 
