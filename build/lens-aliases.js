@@ -14,6 +14,7 @@ export const LENS_ALIASES = {
   "LEICA DG 12-60/F2.8-4.0": "Panasonic Leica DG 12-60mm f/2.8-4",
   "EF24-105mm f/4L IS USM": "Canon EF 24-105mm f/4L IS USM",
   "EF50mm f/1.8 II": "Canon EF 50mm f/1.8 II",
+  "AF 27/2.8": "TTArtisan AF 27mm f/2.8",
 };
 
 // Lens strings to exclude from the /g/ page entirely. Useful for placeholders
