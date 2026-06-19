@@ -1,35 +1,25 @@
 import { head, header, footer, escapeHtml, imgDims, SITE_URL } from "./_partials.js";
 
-export function renderCamerasIndex({ cameras, lenses, photos, buildTime }) {
+export function renderCamerasIndex({ cameras, photos, buildTime }) {
   const cameraCards = cameras.length
     ? cameras.map((c) => renderCard(c, photos, "g")).join("\n")
     : `<li class="empty">No camera EXIF found in your photos yet.</li>`;
-
-  const lensList = lenses || [];
-  const lensCards = lensList.length
-    ? lensList.map((l) => renderCard(l, photos, "l")).join("\n")
-    : `<li class="empty">No lens EXIF found in your photos yet.</li>`;
 
   const body = `<div class="shell">
   ${header()}
   <p class="section-label">gear</p>
   <h2 class="display">By the gear that made them.</h2>
-  <p class="lede">Auto-grouped from EXIF. Photos without camera or lens metadata aren't included.</p>
+  <p class="lede">Auto-grouped from EXIF. Photos without camera metadata aren't included.</p>
   <h3 class="gear-section-heading">Cameras</h3>
   <ul class="collection-list">
 ${cameraCards}
-  </ul>
-  <hr class="gear-section-rule" />
-  <h3 class="gear-section-heading">Lenses</h3>
-  <ul class="collection-list">
-${lensCards}
   </ul>
   ${footer({ buildTime })}
 </div>`;
 
   return `${head({
-    title: "Cameras and lenses",
-    description: "Photos grouped by the camera and lens that made them.",
+    title: "Cameras",
+    description: "Photos grouped by the camera that made them.",
     ogUrl: SITE_URL + "/g/",
   })}
 <body>
