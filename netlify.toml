@@ -8,6 +8,14 @@
   NODE_VERSION = "20"
   # FLICKR_API_KEY and FLICKR_USER_ID are set in the Netlify UI as env vars.
   # Do not put real values in this file - it is committed to GitHub.
+  # The serverless function below reads the same two env vars at runtime.
+
+# Serverless functions. home-recent fetches the latest photos from Flickr
+# on request so the home grid can refresh without a redeploy (see
+# assets/home-live.js). esbuild bundles the shared build/templates/* modules.
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
 
 # Clean URL for photo permalinks: /p/{id} resolves to /p/{id}/index.html.
 [[redirects]]

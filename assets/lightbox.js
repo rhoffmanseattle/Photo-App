@@ -82,6 +82,21 @@
         bindAnchor(anchors[i], startIndex + i);
       }
     },
+
+    // Replace the entire dataSource and rebind the given anchors from
+    // index 0. Used by home-live.js after it swaps the server-rendered
+    // grid head for fresh, live tiles: the old anchors are gone from the
+    // DOM (their handlers go with them), and these new anchors line up
+    // with the new dataSource order. Reassigning the module-scoped
+    // dataSource is safe because click handlers read it at call time.
+    reset: function (items, anchors) {
+      dataSource = Array.isArray(items) ? items.slice() : [];
+      if (!anchors) return;
+      var n = Math.min(dataSource.length, anchors.length);
+      for (var i = 0; i < n; i++) {
+        bindAnchor(anchors[i], i);
+      }
+    },
   };
 
   // Photo detail page: hero <a> opens viewer at the current photo's

@@ -24,9 +24,11 @@ export function renderHome({ photos, buildTime }) {
 
   // Sentinel sits inside the grid as a final <li> so CSS multi-column
   // masonry doesn't have to special-case anything outside the grid.
-  // home-infinite.js observes this element and triggers the next
-  // batch when it intersects the viewport.
-  const sentinel = remainingCount > 0
+  // home-live.js observes this element and triggers the next batch when
+  // it intersects the viewport. We emit it whenever any photos render
+  // (not just when the static build has a tail) because the live feed
+  // may surface more photos than were baked in at build time.
+  const sentinel = initialPhotos.length
     ? `    <li class="photo-grid__sentinel" data-home-sentinel aria-hidden="true"></li>`
     : "";
 
@@ -36,6 +38,7 @@ export function renderHome({ photos, buildTime }) {
   <ul class="photo-grid photo-grid--dense"
       data-pswp-gallery
       data-home-grid
+      data-initial-count="${HOME_INITIAL_COUNT}"
       data-batch-size="${HOME_BATCH_SIZE}"
       data-remaining="${remainingCount}">
 ${tiles}
@@ -45,7 +48,7 @@ ${sentinel}
 </div>
 <script id="pswp-gallery-data" type="application/json">${JSON.stringify(galleryItems)}</script>
 ${lightboxAssets()}
-${remainingCount > 0 ? `<script src="/assets/home-infinite.js" defer></script>` : ""}`;
+${initialPhotos.length ? `<script src="/assets/home-live.js" defer></script>` : ""}`;
 
   return `${head({
     title: "",

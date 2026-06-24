@@ -4,7 +4,9 @@ A static photo portfolio for [photo.longwalkhome.net](https://photo.longwalkhome
 
 ## What it is
 
-A vanilla HTML/CSS/JS site. A Node build script pulls public photos and albums from Flickr, normalizes them into JSON, and generates per-photo and per-collection permalink pages. Netlify rebuilds every six hours, or on demand from the dashboard.
+A vanilla HTML/CSS/JS site. A Node build script pulls public photos and albums from Flickr, normalizes them into JSON, and generates per-photo and per-collection permalink pages.
+
+The home page also updates **live, without a redeploy**: a Netlify Function (`netlify/functions/home-recent.mjs`) fetches the current photo list from Flickr on request, and `assets/home-live.js` swaps it into the grid on load. Add, remove, or reorder photos on Flickr and they appear on a refresh (within the function's ~5 minute CDN cache). The static pages remain the instant-paint baseline and the source of permalinks/SEO; new photos get their own static `/p/{id}/` pages on the next rebuild.
 
 ## Repo layout
 
@@ -12,6 +14,7 @@ A vanilla HTML/CSS/JS site. A Node build script pulls public photos and albums f
 .
 ├── assets/              app static assets (css, js, fonts)
 ├── build/               Flickr fetch + page generator (added in build session)
+├── netlify/functions/   serverless functions (live Flickr fetch for the home grid)
 ├── data/                generated JSON artifacts (gitignored)
 ├── docs/internal/       planning docs, todos, drafts (gitignored)
 ├── static/              source HTML templates (added in build session)
@@ -28,8 +31,10 @@ The `docs/internal/` folder is deliberately excluded from version control. It is
 1. Push to `main` on GitHub.
 2. Netlify is connected to the repo and runs the build defined in `netlify.toml`.
 3. Built site publishes to `photo.longwalkhome.net`.
-4. Scheduled rebuild every six hours pulls fresh photos from Flickr.
-5. Manual deploys available from the Netlify dashboard.
+4. The home grid refreshes from Flickr live via the `home-recent` function — no redeploy needed for everyday photo changes.
+5. Manual deploys available from the Netlify dashboard. A rebuild is only needed to regenerate static permalink/collection/camera pages (and full EXIF) for brand-new photos.
+
+> Note: an earlier version of this README claimed a "scheduled rebuild every six hours," but nothing in this repo configures one. If you want periodic rebuilds (to refresh the static permalink pages), set up a [scheduled build](https://docs.netlify.com/configure-builds/build-hooks/) in the Netlify UI or via a build hook + cron. Day-to-day photo updates no longer depend on it.
 
 ## Required Netlify environment variables
 
