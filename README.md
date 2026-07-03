@@ -4,6 +4,8 @@ A static photo portfolio for [photo.longwalkhome.net](https://photo.longwalkhome
 
 ## What it is
 
+Frustrated with using Insta for photos but wanting a streamlined front-end, I used Flickr's excellent service to host my photos.
+
 A vanilla HTML/CSS/JS site. A Node build script pulls public photos and albums from Flickr, normalizes them into JSON, and generates per-photo and per-collection permalink pages.
 
 The home page also updates **live, without a redeploy**: a Netlify Function (`netlify/functions/home-recent.mjs`) fetches the current photo list from Flickr on request, and `assets/home-live.js` swaps it into the grid on load. Add, remove, or reorder photos on Flickr and they appear on a refresh (within the function's ~5 minute CDN cache). The static pages remain the instant-paint baseline and the source of permalinks/SEO; new photos get their own static `/p/{id}/` pages on the next rebuild.
@@ -12,12 +14,11 @@ The home page also updates **live, without a redeploy**: a Netlify Function (`ne
 
 ```
 .
-├── assets/              app static assets (css, js, fonts)
-├── build/               Flickr fetch + page generator (added in build session)
+├── assets/              app static assets (css, js)
+├── build/               Flickr fetch + page generator (templates in build/templates/)
 ├── netlify/functions/   serverless functions (live Flickr fetch for the home grid)
 ├── data/                generated JSON artifacts (gitignored)
 ├── docs/internal/       planning docs, todos, drafts (gitignored)
-├── static/              source HTML templates (added in build session)
 ├── dist/                Netlify publish dir (gitignored, generated)
 ├── netlify.toml         build + redirect config
 ├── LICENSE              GPL v3
@@ -45,14 +46,15 @@ Set these in the Netlify UI (Site settings → Environment variables). Never com
 
 ## Local development
 
-Build script and templates land in the next session. Once they exist:
+Copy `.env.example` to `.env` and fill in `FLICKR_API_KEY` and `FLICKR_USER_ID`, then:
 
 ```
 npm install
 npm run build      # runs the Flickr fetch + page generator
+npm run dev        # serves dist/ at http://localhost:3000
 ```
 
-Then open `dist/index.html` or serve `dist/` with any static server.
+`npm run clean` removes the generated `dist/` and `data/` folders.
 
 ## License
 
