@@ -131,6 +131,7 @@ function buildSrcset(urls) {
   const parts = [];
   if (urls.medium) parts.push(`${urls.medium} 640w`);
   if (urls.large) parts.push(`${urls.large} 1024w`);
-  if (urls.original) parts.push(`${urls.original} 2048w`);
+  if (urls.h) parts.push(`${urls.h} 1600w`);
+  if (urls.k) parts.push(`${urls.k} 2048w`);
   return parts.join(", ");
 }
