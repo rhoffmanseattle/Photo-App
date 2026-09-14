@@ -1,8 +1,9 @@
-import { head, header, escapeHtml, lightboxAssets, lightboxItem, lightboxSource, SITE_URL } from "./_partials.js";
+import { head, header, escapeHtml, lightboxAssets, lightboxItem, lightboxSource, SITE_URL, absoluteUrl } from "./_partials.js";
 
 export function renderPhoto({ photo, collection, prev, next, albumPhotos }) {
   const exifRows = renderExifRows(photo);
-  const ogImage = photo.urls.large || photo.urls.medium || "";
+  // og:image requires a full URL; urls are proxied root-relative paths.
+  const ogImage = absoluteUrl(photo.urls.large || photo.urls.medium || "");
   const heroSrc = photo.urls.large || photo.urls.medium || photo.urls.small || "";
   const heroSrcset = buildSrcset(photo.urls);
   const collectionHref = collection ? `/c/${collection.slug}/` : "/";

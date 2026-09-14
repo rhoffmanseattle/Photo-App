@@ -6,6 +6,51 @@ export const SITE_TITLE = "photo.longwalkhome.net";
 export const SITE_DESC = "Photographs by Ryan Hoffman.";
 export const SITE_URL = "https://photo.longwalkhome.net";
 
+// --- Image proxy --------------------------------------------------
+//
+// Images are served through the site's own domain (/img/*, proxied to
+// Flickr's CDN by Netlify — see netlify.toml) instead of directly from
+// live.staticflickr.com. Flickr rate-limits by IP, and visitors behind
+// shared-IP egress (iCloud Private Relay routes ALL Safari traffic
+// through a handful of Apple relay IPs) get 429s on direct image loads.
+// Same-origin URLs mean visitors hit Netlify's CDN, which fetches from
+// Flickr from its own IPs and caches the result.
+
+export const FLICKR_CDN_PREFIX = "https://live.staticflickr.com/";
+export const IMG_PROXY_PREFIX = "/img/";
+
+// Map one Flickr CDN URL to its proxied same-origin path. Non-Flickr
+// or empty values pass through untouched.
+export function proxyImage(url) {
+  if (!url) return "";
+  return String(url).startsWith(FLICKR_CDN_PREFIX)
+    ? IMG_PROXY_PREFIX + String(url).slice(FLICKR_CDN_PREFIX.length)
+    : String(url);
+}
+
+// Proxy every entry of a photo's urls map ({thumb, small, medium, ...}).
+export function proxyImageUrls(urls) {
+  const out = {};
+  for (const [k, v] of Object.entries(urls || {})) out[k] = proxyImage(v);
+  return out;
+}
+
+// Reverse of proxyImage: the original Flickr CDN URL, for server-side
+// fetches (e.g. byte-size measurement at build time).
+export function unproxyImage(url) {
+  if (!url) return "";
+  return String(url).startsWith(IMG_PROXY_PREFIX)
+    ? FLICKR_CDN_PREFIX + String(url).slice(IMG_PROXY_PREFIX.length)
+    : String(url);
+}
+
+// Absolute form of a root-relative URL, for contexts that require a
+// full URL (og:image, RSS enclosures).
+export function absoluteUrl(url) {
+  if (!url) return "";
+  return String(url).startsWith("/") ? SITE_URL + String(url) : String(url);
+}
+
 export function head({ title, description, ogImage, ogUrl, extra = "" }) {
   const fullTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
   const desc = description || SITE_DESC;
@@ -21,8 +66,6 @@ export function head({ title, description, ogImage, ogUrl, extra = "" }) {
   <meta name="description" content="${escapeAttr(desc)}" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="preconnect" href="https://live.staticflickr.com" crossorigin />
-  <link rel="dns-prefetch" href="https://live.staticflickr.com" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Inconsolata:wght@400;500&family=Inter:wght@400;500&display=swap" />
   <link rel="stylesheet" href="/assets/style.css" />
   <link rel="alternate" type="application/rss+xml" title="${escapeAttr(SITE_TITLE)}" href="/feed.xml" />

@@ -11,7 +11,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { slugify, formatBytes } from "./templates/_partials.js";
+import { slugify, formatBytes, proxyImageUrls, unproxyImage } from "./templates/_partials.js";
 import { renderHome, renderHomeTile, HOME_INITIAL_COUNT, HOME_BATCH_SIZE } from "./templates/home.js";
 import { lightboxItem } from "./templates/_partials.js";
 import { renderCollectionsIndex } from "./templates/collections-index.js";
@@ -151,7 +151,7 @@ async function main() {
   //    omits it for the on-demand-generated larger sizes).
   console.log(`[fetch] sizes for ${allPhotos.length} photos (concurrency ${SIZE_CONCURRENCY})`);
   await runWithConcurrency(allPhotos, SIZE_CONCURRENCY, async (p) => {
-    const url = pickLargestUrl(p.urls);
+    const url = unproxyImage(pickLargestUrl(p.urls));
     if (!url) return;
     p.bytes = await measureUrlBytes(url);
   });
@@ -428,7 +428,9 @@ function normalizePhoto(p, album) {
     dateTaken: p.datetaken || "",
     dateUpload: p.dateupload || "",
     tags: (p.tags || "").split(/\s+/).filter(Boolean),
-    urls: {
+    // Same-origin proxied paths (/img/...) — see proxyImageUrls in
+    // templates/_partials.js and the /img/* redirect in netlify.toml.
+    urls: proxyImageUrls({
       thumb: p.url_t || "",
       small: p.url_s || "",
       medium: p.url_m || "",
@@ -440,7 +442,7 @@ function normalizePhoto(p, album) {
       "5k": p.url_5k || "",
       "6k": p.url_6k || "",
       original: p.url_o || "",
-    },
+    }),
     dims: {
       large: p.height_l && p.width_l ? { w: +p.width_l, h: +p.height_l } : null,
       medium: p.height_m && p.width_m ? { w: +p.width_m, h: +p.height_m } : null,

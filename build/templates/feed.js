@@ -23,7 +23,7 @@
 // weren't successfully measured we fall back to 0, which most
 // readers tolerate.
 
-import { SITE_TITLE, SITE_DESC, SITE_URL, escapeHtml, formatDate } from "./_partials.js";
+import { SITE_TITLE, SITE_DESC, SITE_URL, escapeHtml, formatDate, absoluteUrl } from "./_partials.js";
 
 const FEED_LIMIT = 50;
 const FEED_PATH = "/feed.xml";
@@ -72,9 +72,10 @@ ${itemXml}
 function renderItem(p) {
   const permalink = SITE_URL + `/p/${p.id}/`;
   const title = p.title || p.rawTitle || `Photo ${p.id}`;
-  const enclosureUrl = pickEnclosureUrl(p.urls);
+  // Feed readers need full URLs; urls are proxied root-relative paths.
+  const enclosureUrl = absoluteUrl(pickEnclosureUrl(p.urls));
   const enclosureDims = pickEnclosureDims(p);
-  const thumbUrl = p.urls.medium || p.urls.small || enclosureUrl;
+  const thumbUrl = absoluteUrl(p.urls.medium || p.urls.small) || enclosureUrl;
   const pubDate = rfc822FromUpload(p.dateUpload);
   const itemHtml = renderItemHtml(p, enclosureUrl);
   const bytes = p.bytes && p.bytes > 0 ? p.bytes : 0;

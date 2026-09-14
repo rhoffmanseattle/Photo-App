@@ -17,6 +17,17 @@
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
+# Image proxy: /img/* is served from Flickr's CDN through Netlify's proxy.
+# Visitors fetch images from photo.longwalkhome.net (same origin) and
+# Netlify's CDN fetches/caches from live.staticflickr.com. This avoids
+# Flickr's per-IP rate limiting (429s) for visitors behind shared-IP
+# egress like iCloud Private Relay, which routes all Safari traffic
+# through a small set of Apple relay IPs that Flickr throttles.
+[[redirects]]
+  from = "/img/*"
+  to = "https://live.staticflickr.com/:splat"
+  status = 200
+
 # Clean URL for photo permalinks: /p/{id} resolves to /p/{id}/index.html.
 [[redirects]]
   from = "/p/:id"

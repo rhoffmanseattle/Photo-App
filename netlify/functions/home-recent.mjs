@@ -22,7 +22,7 @@
 // photos pick it up on the next rebuild.
 
 import { renderHomeTile, HOME_INITIAL_COUNT, HOME_BATCH_SIZE } from "../../build/templates/home.js";
-import { lightboxItem } from "../../build/templates/_partials.js";
+import { lightboxItem, proxyImageUrls } from "../../build/templates/_partials.js";
 
 const API_KEY = process.env.FLICKR_API_KEY;
 const USER_ID = process.env.FLICKR_USER_ID;
@@ -112,13 +112,15 @@ function normalize(p) {
     dateUpload: p.dateupload || "",
     dateTaken: p.datetaken || "",
     tags: [],
-    urls: {
+    // Same-origin proxied paths (/img/...) — see proxyImageUrls in
+    // build/templates/_partials.js and the /img/* redirect in netlify.toml.
+    urls: proxyImageUrls({
       thumb: p.url_t || "",
       small: p.url_s || "",
       medium: p.url_m || "",
       large: p.url_l || "",
       original: p.url_o || "",
-    },
+    }),
     dims: {
       medium: dim(p.width_m, p.height_m),
       large: dim(p.width_l, p.height_l),
